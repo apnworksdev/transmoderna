@@ -1,0 +1,22 @@
+---
+import type { ShopProduct } from '../../lib/shop';
+import { productDisplayPrice, productHandle, productImageUrl } from '../../lib/shop';
+
+interface Props {
+  product: ShopProduct;
+}
+
+const { product } = Astro.props;
+const title = product.store?.title ?? 'Untitled product';
+const handle = productHandle(product);
+const imageUrl = productImageUrl(product);
+const price = productDisplayPrice(product);
+---
+
+<article>
+  {imageUrl ? <img src={imageUrl} alt={title} loading="lazy" /> : null}
+  <h2>
+    {handle ? <a href={`/shop/${handle}`}>{title}</a> : title}
+  </h2>
+  {typeof price === 'number' ? <p>{price}</p> : null}
+</article>

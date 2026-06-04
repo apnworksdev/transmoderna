@@ -1,0 +1,22 @@
+{
+  "name": "transmoderna-monorepo",
+  "private": true,
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:web\" \"npm run dev:studio\"",
+    "dev:web": "npm run dev --workspace web",
+    "dev:studio": "npm run dev --workspace studio",
+    "build:web": "npm run build --workspace web",
+    "build:studio": "npm run build --workspace studio"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

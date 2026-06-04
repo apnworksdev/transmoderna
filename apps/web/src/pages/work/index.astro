@@ -1,0 +1,48 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PortableTextHtml from '../../components/PortableTextHtml.astro';
+import VimeoEmbed from '../../components/VimeoEmbed.astro';
+import { getWorks } from '../../lib/sanity';
+
+const works = await getWorks();
+---
+
+<BaseLayout title="Work — Transmoderna">
+  <main>
+    <h1>Work</h1>
+    {
+      works.length === 0 ? (
+        <p>No work items yet.</p>
+      ) : (
+        <ul>
+          {
+            works.map((item) => (
+              <li>
+                <article>
+                  <details>
+                    <summary>
+                      <h2>{item.title}</h2>
+                      {item.year != null ? (
+                        <time datetime={String(item.year)}>{item.year}</time>
+                      ) : null}
+                    </summary>
+                    {item.description ? (
+                      <PortableTextHtml blocks={item.description} />
+                    ) : null}
+                    {item.video?.title ? <h3>{item.video.title}</h3> : null}
+                    {item.video?.url ? (
+                      <VimeoEmbed url={item.video.url} title={item.video.title} />
+                    ) : null}
+                    {item.video?.description ? (
+                      <PortableTextHtml blocks={item.video.description} />
+                    ) : null}
+                  </details>
+                </article>
+              </li>
+            ))
+          }
+        </ul>
+      )
+    }
+  </main>
+</BaseLayout>

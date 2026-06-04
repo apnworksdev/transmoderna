@@ -1,0 +1,13 @@
+---
+import type { PortableTextBlock } from '@portabletext/types';
+import { portableTextToHtml } from '../lib/portableText';
+
+interface Props {
+  blocks?: PortableTextBlock[] | null;
+}
+
+const { blocks } = Astro.props;
+const html = portableTextToHtml(blocks);
+---
+
+{html ? <div set:html={html} /> : null}

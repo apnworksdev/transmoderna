@@ -1,0 +1,25 @@
+---
+import { vimeoEmbedUrl } from '../lib/sanity';
+
+interface Props {
+  url?: string;
+  title?: string;
+}
+
+const { url, title } = Astro.props;
+const embedUrl = vimeoEmbedUrl(url);
+---
+
+{
+  embedUrl ? (
+    <iframe
+      src={embedUrl}
+      title={title ?? 'Vimeo video'}
+      width="560"
+      height="315"
+      allow="autoplay; fullscreen; picture-in-picture"
+      allowfullscreen
+      loading="lazy"
+    />
+  ) : null
+}

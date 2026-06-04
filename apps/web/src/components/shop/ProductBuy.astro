@@ -1,0 +1,81 @@
+---
+import type { ShopProduct } from '../../lib/shop';
+import { variantAvailable, variantTitle } from '../../lib/shop';
+import { isStorefrontConfigured } from '../../lib/shopify-storefront';
+
+interface Props {
+  product: ShopProduct;
+}
+
+const { product } = Astro.props;
+const variants = (product.store?.variants ?? []).filter(
+  (v) => v.store?.gid || variantTitle(v) !== 'Variant'
+);
+const shopifyEnabled = isStorefrontConfigured();
+const defaultVariant = variants.find((v) => variantAvailable(v)) ?? variants[0];
+---
+
+<div data-product-buy>
+  {
+    variants.length === 0 ? (
+      <p>No variants synced yet.</p>
+    ) : variants.length === 1 ? (
+      <>
+        <input
+          type="hidden"
+          name="variant"
+          value={defaultVariant ? variantTitle(defaultVariant) : ''}
+          data-variant-radio
+          data-variant-title={defaultVariant ? variantTitle(defaultVariant) : ''}
+          data-price={
+            typeof defaultVariant?.store?.price === 'number'
+              ? String(defaultVariant.store.price)
+              : ''
+          }
+          checked
+        />
+        <p data-variant-price>
+          {typeof defaultVariant?.store?.price === 'number'
+            ? defaultVariant.store.price
+            : '—'}
+        </p>
+      </>
+    ) : (
+      <fieldset>
+        <legend>Select variant</legend>
+        <ul>
+          {
+            variants.map((v, idx) => {
+              const available = variantAvailable(v);
+              return (
+                <li>
+                  <label>
+                    <input
+                      type="radio"
+                      name="variant"
+                      value={variantTitle(v)}
+                      data-variant-radio
+                      data-variant-title={variantTitle(v)}
+                      data-price={typeof v.store?.price === 'number' ? String(v.store.price) : ''}
+                      checked={idx === 0}
+                      disabled={!available}
+                    />
+                    {variantTitle(v)}
+                    {!available ? ' (sold out)' : ''}
+                    {typeof v.store?.price === 'number' ? ` — ${v.store.price}` : ''}
+                  </label>
+                </li>
+              );
+            })
+          }
+        </ul>
+      </fieldset>
+    )
+  }
+
+  <p>
+    <button type="button" data-add-to-cart disabled={!shopifyEnabled || variants.length === 0}>
+      {shopifyEnabled ? 'Add to cart' : 'Shopify not configured'}
+    </button>
+  </p>
+</div>

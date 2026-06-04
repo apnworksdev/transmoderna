@@ -1,0 +1,31 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PortfolioMedia from '../../components/PortfolioMedia.astro';
+import { getPortfolioItems } from '../../lib/sanity';
+
+const items = await getPortfolioItems();
+---
+
+<BaseLayout title="Portfolio — Transmoderna">
+  <main>
+    <h1>Portfolio</h1>
+    {
+      items.length === 0 ? (
+        <p>No portfolio items yet.</p>
+      ) : (
+        <ul>
+          {
+            items.map((item) => (
+              <li>
+                <article>
+                  <h2>{item.title}</h2>
+                  <PortfolioMedia media={item.media} title={item.title ?? 'Portfolio item'} />
+                </article>
+              </li>
+            ))
+          }
+        </ul>
+      )
+    }
+  </main>
+</BaseLayout>

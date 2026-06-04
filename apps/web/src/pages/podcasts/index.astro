@@ -1,0 +1,36 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPodcasts } from '../../lib/sanity';
+
+const podcasts = await getPodcasts();
+---
+
+<BaseLayout title="Podcasts — Transmoderna">
+  <main>
+    <h1>Podcasts</h1>
+    {
+      podcasts.length === 0 ? (
+        <p>No podcasts yet.</p>
+      ) : (
+        <ul>
+          {
+            podcasts.map((item) => (
+              <li>
+                <article>
+                  <h2>{item.title}</h2>
+                  {item.podcaster ? <p>{item.podcaster}</p> : null}
+                  {item.number != null ? <p>{item.number}</p> : null}
+                  {item.url ? (
+                    <p>
+                      <a href={item.url}>Listen</a>
+                    </p>
+                  ) : null}
+                </article>
+              </li>
+            ))
+          }
+        </ul>
+      )
+    }
+  </main>
+</BaseLayout>

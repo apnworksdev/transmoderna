@@ -1,0 +1,16 @@
+---
+import type { SanityImageWithAlt } from '../lib/sanity';
+import { imageAlt, urlForSanityImage } from '../lib/sanity';
+
+interface Props {
+  image?: SanityImageWithAlt | null;
+  altFallback: string;
+  width?: number;
+}
+
+const { image, altFallback, width = 1200 } = Astro.props;
+const src = urlForSanityImage(image, { width });
+const alt = imageAlt(image, altFallback);
+---
+
+{src ? <img src={src} alt={alt} width={width} loading="lazy" /> : null}

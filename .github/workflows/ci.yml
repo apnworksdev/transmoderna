@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      PUBLIC_SANITY_PROJECT_ID: ci-placeholder
+      PUBLIC_SANITY_DATASET: production
+      PUBLIC_SANITY_API_VERSION: '2026-05-11'
+      SANITY_STUDIO_PROJECT_ID: ci-placeholder
+      SANITY_STUDIO_DATASET: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build:studio
+      - run: npm run build:web

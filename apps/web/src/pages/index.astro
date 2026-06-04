@@ -1,0 +1,21 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PortableTextHtml from '../components/PortableTextHtml.astro';
+import SanityImage from '../components/SanityImage.astro';
+import { getHome } from '../lib/sanity';
+
+const home = await getHome();
+---
+
+<BaseLayout title="Transmoderna">
+  <main>
+    {
+      home?.logo ? (
+        <SanityImage image={home.logo} altFallback="Transmoderna" width={400} />
+      ) : (
+        <p>No logo yet. Add content in Sanity Studio → Home.</p>
+      )
+    }
+    {home?.intro ? <PortableTextHtml blocks={home.intro} /> : <p>No intro yet.</p>}
+  </main>
+</BaseLayout>

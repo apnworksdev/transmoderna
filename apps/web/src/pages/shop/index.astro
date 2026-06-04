@@ -1,0 +1,62 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PortableTextHtml from '../../components/PortableTextHtml.astro';
+import ShopCartShell from '../../components/shop/ShopCartShell.astro';
+import ShopProductCard from '../../components/shop/ShopProductCard.astro';
+import { getShopPage } from '../../lib/shop';
+
+const shop = await getShopPage();
+const products = shop?.products ?? [];
+const readToken = import.meta.env.SANITY_API_READ_TOKEN?.trim();
+const hasReadToken = Boolean(readToken);
+const shopifyDomain = import.meta.env.PUBLIC_SHOPIFY_DOMAIN ?? '';
+const storefrontToken = import.meta.env.PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN ?? '';
+const marketCountry = import.meta.env.PUBLIC_SHOPIFY_MARKET_COUNTRY ?? '';
+---
+
+<BaseLayout title="Shop — Transmoderna">
+  <main
+    data-shop-root
+    data-shopify-domain={shopifyDomain}
+    data-storefront-token={storefrontToken}
+    data-market-country={marketCountry}
+  >
+    <h1>Shop</h1>
+    {shop?.intro ? <PortableTextHtml blocks={shop.intro} /> : null}
+
+    <ShopCartShell />
+
+    {
+      products.length === 0 ? (
+        <div>
+          <p>
+            No products were returned from Sanity. This project’s dataset is not readable
+            without an API token (anonymous queries return 0 documents).
+          </p>
+          {!hasReadToken ? (
+            <p>
+              Add a <strong>Viewer</strong> token to <code>apps/web/.env</code> as{' '}
+              <code>SANITY_API_READ_TOKEN=sk…</code> (no quotes), save the file, then restart{' '}
+              <code>npm run dev:web</code>.
+            </p>
+          ) : (
+            <p>
+              <code>SANITY_API_READ_TOKEN</code> is set — restart <code>npm run dev:web</code>{' '}
+              if you just added it. For production, add the same variable in Netlify env settings.
+            </p>
+          )}
+        </div>
+      ) : (
+        <ul>
+          {products.map((product) => (
+            <li>
+              <ShopProductCard product={product} />
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </main>
+</BaseLayout>
+
+<script src="../../scripts/shop-cart.ts"></script>

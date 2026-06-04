@@ -1,0 +1,47 @@
+import { ABOUT_DOCUMENT_ID, HOME_DOCUMENT_ID, SHOP_DOCUMENT_ID } from '@repo/shared';
+import {
+  BasketIcon,
+  CaseIcon,
+  CogIcon,
+  HomeIcon,
+  ImagesIcon,
+  MicrophoneIcon,
+  PresentationIcon,
+  TagIcon,
+  UserIcon,
+  UsersIcon
+} from '@sanity/icons';
+import type { StructureResolver } from 'sanity/structure';
+
+export const structure: StructureResolver = (S) =>
+  S.list()
+    .title('Content')
+    .items([
+      S.listItem()
+        .title('Home')
+        .id(HOME_DOCUMENT_ID)
+        .icon(HomeIcon)
+        .child(S.document().schemaType('home').documentId(HOME_DOCUMENT_ID)),
+      S.listItem()
+        .title('About')
+        .id(ABOUT_DOCUMENT_ID)
+        .icon(UsersIcon)
+        .child(S.document().schemaType('about').documentId(ABOUT_DOCUMENT_ID)),
+      S.listItem()
+        .title('Shop')
+        .id(SHOP_DOCUMENT_ID)
+        .icon(BasketIcon)
+        .child(S.document().schemaType('shop').documentId(SHOP_DOCUMENT_ID)),
+      S.divider(),
+      S.documentTypeListItem('work').title('Work').icon(CaseIcon),
+      S.documentTypeListItem('exhibition').title('Exhibitions').icon(PresentationIcon),
+      S.documentTypeListItem('portfolioItem').title('Portfolio').icon(ImagesIcon),
+      S.documentTypeListItem('podcast').title('Podcasts').icon(MicrophoneIcon),
+      S.divider(),
+      S.documentTypeListItem('product').title('Products').icon(BasketIcon),
+      S.documentTypeListItem('productVariant').title('Product variants').icon(CogIcon),
+      S.documentTypeListItem('brand').title('Brands'),
+      S.documentTypeListItem('tag').title('Tags').icon(TagIcon),
+      S.divider(),
+      S.documentTypeListItem('artist').title('Artists').icon(UserIcon)
+    ]);

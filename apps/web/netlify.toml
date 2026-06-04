@@ -1,0 +1,3 @@
+[build]
+  command = "cd ../.. && npm install --include=optional && npm run build --workspace web"
+  publish = "dist"

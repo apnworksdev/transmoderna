@@ -1,0 +1,76 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PortableTextHtml from '../../components/PortableTextHtml.astro';
+import SanityImage from '../../components/SanityImage.astro';
+import { getAbout } from '../../lib/sanity';
+
+const about = await getAbout();
+---
+
+<BaseLayout title="About — Transmoderna">
+  <main>
+    <h1>About</h1>
+    {
+      !about ? (
+        <p>No about content yet. Add content in Sanity Studio → About.</p>
+      ) : (
+        <>
+          {about.description ? <PortableTextHtml blocks={about.description} /> : null}
+
+          {about.teamMembers && about.teamMembers.length > 0 ? (
+            <section>
+              <h2>Team</h2>
+              <ul>
+                {
+                  about.teamMembers.map((member) => (
+                    <li>
+                      <article>
+                        {member.name ? <h3>{member.name}</h3> : null}
+                        {member.image ? (
+                          <SanityImage
+                            image={member.image}
+                            altFallback={member.name ?? 'Team member'}
+                            width={400}
+                          />
+                        ) : null}
+                        {member.description ? (
+                          <PortableTextHtml blocks={member.description} />
+                        ) : null}
+                      </article>
+                    </li>
+                  ))
+                }
+              </ul>
+            </section>
+          ) : null}
+
+          {about.contact ? (
+            <section>
+              {about.contact.heading ? <h2>{about.contact.heading}</h2> : <h2>Contact</h2>}
+              {about.contact.body ? <PortableTextHtml blocks={about.contact.body} /> : null}
+            </section>
+          ) : null}
+
+          {about.connect?.links && about.connect.links.length > 0 ? (
+            <section>
+              {about.connect.heading ? <h2>{about.connect.heading}</h2> : <h2>Connect</h2>}
+              <ul>
+                {
+                  about.connect.links.map((link) => (
+                    <li>
+                      {link.url ? (
+                        <a href={link.url}>{link.label ?? link.url}</a>
+                      ) : (
+                        <span>{link.label}</span>
+                      )}
+                    </li>
+                  ))
+                }
+              </ul>
+            </section>
+          ) : null}
+        </>
+      )
+    }
+  </main>
+</BaseLayout>

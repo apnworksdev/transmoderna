@@ -1,0 +1,60 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SanityImage from '../../components/SanityImage.astro';
+import { getExhibitions } from '../../lib/sanity';
+
+const exhibitions = await getExhibitions();
+---
+
+<BaseLayout title="Exhibitions — Transmoderna">
+  <main>
+    <h1>Exhibitions</h1>
+    {
+      exhibitions.length === 0 ? (
+        <p>No exhibitions yet.</p>
+      ) : (
+        <ul>
+          {
+            exhibitions.map((item) => (
+              <li>
+                <article>
+                  {item.thumbnailImage ? (
+                    <SanityImage
+                      image={item.thumbnailImage}
+                      altFallback={item.title ?? 'Exhibition'}
+                      width={600}
+                    />
+                  ) : null}
+                  <h2>{item.title}</h2>
+                  {item.year != null ? (
+                    <p>
+                      <time datetime={String(item.year)}>{item.year}</time>
+                    </p>
+                  ) : null}
+                  {item.location ? <p>{item.location}</p> : null}
+                  {item.tags && item.tags.length > 0 ? (
+                    <ul>
+                      {item.tags.map((tag) => (
+                        <li>{tag}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {item.artists && item.artists.length > 0 ? (
+                    <ul>
+                      {item.artists.map((artist) => (
+                        <li>
+                          {artist.name}
+                          {artist.country ? ` (${artist.country})` : ''}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </article>
+              </li>
+            ))
+          }
+        </ul>
+      )
+    }
+  </main>
+</BaseLayout>
