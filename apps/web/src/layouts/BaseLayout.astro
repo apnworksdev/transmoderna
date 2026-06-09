@@ -1,11 +1,46 @@
 ---
-import SiteNav from '../components/SiteNav.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import { getHome, getSiteHeader } from '../lib/sanity';
+import type { SanityImageWithAlt, SiteMenuLink } from '../lib/sanity';
+import {
+  HOME_INTRO_SESSION_KEY,
+  HOME_INTRO_SESSION_VALUE,
+  SITE_MENU_FALLBACK_LINKS
+} from '@repo/shared';
+import '../styles/index.css';
+import '../styles/components/nav.css';
 
 interface Props {
   title?: string;
+  /** Index: full-screen home with intro sequence. */
+  variant?: 'default' | 'index';
+  /** Home footer logo — pass from index to avoid a duplicate Sanity fetch. */
+  footerLogo?: SanityImageWithAlt | null;
 }
 
-const { title = 'Transmoderna' } = Astro.props;
+const { title = 'Transmoderna', variant = 'default', footerLogo: footerLogoProp } = Astro.props;
+const isIndex = variant === 'index';
+const siteHeader = await getSiteHeader();
+
+let footerLogo = footerLogoProp;
+if (footerLogo === undefined) {
+  const home = await getHome();
+  footerLogo = home?.logo ?? null;
+}
+
+const menuFallback: SiteMenuLink[] = SITE_MENU_FALLBACK_LINKS.map((link) => ({
+  ...link,
+  image: null
+}));
+
+const menuLinks =
+  siteHeader?.menuLinks && siteHeader.menuLinks.length > 0
+    ? siteHeader.menuLinks
+    : menuFallback;
+
+if (isIndex) {
+  await import('../styles/pages/index.css');
+}
 ---
 
 <!doctype html>
@@ -14,9 +49,38 @@ const { title = 'Transmoderna' } = Astro.props;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
+    {
+      isIndex ? (
+        <script
+          is:inline
+          define:vars={{ homeIntroKey: HOME_INTRO_SESSION_KEY, homeIntroValue: HOME_INTRO_SESSION_VALUE }}
+        >
+          try {
+            if (sessionStorage.getItem(homeIntroKey) === homeIntroValue) {
+              document.documentElement.classList.add('intro-complete');
+            } else {
+              document.documentElement.classList.add('intro-pending');
+            }
+          } catch (e) {
+            document.documentElement.classList.add('intro-complete');
+          }
+        </script>
+      ) : null
+    }
   </head>
-  <body>
-    <SiteNav />
+  <body class:list={[{ 'page-index': isIndex }]}>
+    <SiteHeader
+      logo={siteHeader?.logo}
+      menuLinks={menuLinks}
+      footerLogo={footerLogo}
+      deferChromeReveal={isIndex}
+    />
+
     <slot />
+
+    <script>
+      import { initLayout } from '../scripts/layout.ts';
+      initLayout();
+    </script>
   </body>
 </html>

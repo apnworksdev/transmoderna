@@ -1,21 +1,47 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import PortableTextHtml from '../components/PortableTextHtml.astro';
 import SanityImage from '../components/SanityImage.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
 import { getHome } from '../lib/sanity';
 
 const home = await getHome();
+const introText = home?.introText?.trim() ?? '';
 ---
 
-<BaseLayout title="Transmoderna">
-  <main>
+<BaseLayout title="Transmoderna" variant="index" footerLogo={home?.logo ?? null}>
+  <div class="page-index-shell" data-home-page data-intro-text={introText}>
+    <div class="page-index-video">
+      <video
+        title="Transmoderna"
+        muted
+        autoplay
+        loop
+        playsinline
+        preload="auto"
+      >
+        <source src="/video/home-desktop.mp4" media="(min-width: 768px)" type="video/mp4" />
+        <source src="/video/home-mobile.mp4" media="(max-width: 767px)" type="video/mp4" />
+      </video>
+    </div>
+
     {
-      home?.logo ? (
-        <SanityImage image={home.logo} altFallback="Transmoderna" width={400} />
-      ) : (
-        <p>No logo yet. Add content in Sanity Studio → Home.</p>
-      )
+      introText ? (
+        <p class="page-index-intro-text" data-home-intro-text aria-live="polite" hidden />
+      ) : null
     }
-    {home?.intro ? <PortableTextHtml blocks={home.intro} /> : <p>No intro yet.</p>}
-  </main>
+
+    <footer class="site-chrome site-footer" data-site-chrome>
+      {
+        home?.logo ? (
+          <SanityImage image={home.logo} altFallback="Transmoderna" width={480} />
+        ) : (
+          <p>Transmoderna</p>
+        )
+      }
+    </footer>
+  </div>
+
+  <script>
+    import { initHomeIntro } from '../scripts/home-intro.ts';
+    initHomeIntro();
+  </script>
 </BaseLayout>

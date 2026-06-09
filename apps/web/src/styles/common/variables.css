@@ -1,4 +1,44 @@
 :root {
-  --color-text: #111;
-  --color-bg: #fff;
+  --background-color: #000;
+  --foreground-color: #fff;
+  --gray-color: #8a8a8a;
+
+  --selection-background-color: transparent;
+  --selection-foreground-color: var(--gray-color);
+
+  --font-family: "EK Modena Extended", sans-serif;
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-bold: 700;
+  --font-weight-heavy: 800;
+
+  --ease: ease;
+
+  --duration-fast: 450ms;
+  --duration-base: 600ms;
+  --duration-slow: 800ms;
+  --duration-reveal: 1.4s;
+
+  --delay-short: 150ms;
+
+  --transition-time: var(--duration-base);
+  --transition-effect: var(--ease);
+
+  --margin: 20px;
+
+  --border-radius: 6px;
+
+  --menu-backdrop-blur: 22px;
+  --menu-layer-blur: 32px;
+  --menu-layer-background: rgba(255, 255, 255, 0.1);
+
+  --font-size-xs: 10px;
+  --line-height-xs: 10px;
+  --font-size-s: 12px;
+  --line-height-s: 12px;
+  --font-size-m: 18px;
+  --line-height-m: 24px;
+  --font-size-l: 28px;
+  --line-height-l: 48px;
+
 }

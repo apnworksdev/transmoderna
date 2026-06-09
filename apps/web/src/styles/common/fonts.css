@@ -1,0 +1,31 @@
+@font-face {
+  font-family: 'EK Modena Extended';
+  src: url('/fonts/EKModena-RegularExtended.woff2') format('woff2'),
+       url('/fonts/EKModena-RegularExtended.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'EK Modena Extended';
+  src: url('/fonts/EKModena-BoldExtended.woff2') format('woff2'),
+       url('/fonts/EKModena-BoldExtended.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'EK Modena Extended';
+  src: url('/fonts/EKModena-LightExtended.woff2') format('woff2'),
+       url('/fonts/EKModena-LightExtended.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'EK Modena Extended';
+  src: url('/fonts/EKModena-HeavyExtended.woff2') format('woff2'),
+       url('/fonts/EKModena-HeavyExtended.woff') format('woff');
+  font-weight: 800;
+  font-style: normal;
+}

@@ -1,0 +1,168 @@
+/* Global reset and base styles */
+
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--foreground-color);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  display: none;
+  -webkit-appearance: none;
+  width: 0 !important;
+}
+
+*,
+*::before,
+*::after {
+  font-family: inherit;
+  font-weight: inherit;
+  font-size: inherit;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  box-sizing: border-box;
+  color: inherit;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*::selection {
+  background: var(--selection-background-color);
+  color: var(--selection-foreground-color);
+}
+
+html {
+  background-color: var(--background-color);
+  color: var(--foreground-color);
+  overflow-x: clip;
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  overflow-x: clip;
+}
+
+ul,
+ol,
+menu {
+  list-style: none;
+}
+
+a,
+input,
+button,
+fieldset,
+textarea {
+  all: unset;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
+
+fieldset {
+  min-width: 0;
+}
+
+a,
+button {
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  a:hover,
+  button:hover {
+    opacity: 0.4;
+  }
+}
+
+textarea {
+  resize: vertical;
+}
+
+[disabled] {
+  cursor: not-allowed;
+}
+
+input[hidden] {
+  display: none;
+}
+
+textarea::placeholder,
+input::placeholder {
+  color: inherit;
+}
+
+summary {
+  list-style: none;
+}
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+hr {
+  border: 0;
+  margin: 0;
+}
+
+pre {
+  overflow: auto;
+}
+
+picture,
+img,
+video {
+  width: inherit;
+}
+
+img,
+video {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+.hidden {
+  display: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

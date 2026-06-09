@@ -6,11 +6,23 @@ interface Props {
   image?: SanityImageWithAlt | null;
   altFallback: string;
   width?: number;
+  loading?: 'lazy' | 'eager';
+  fetchpriority?: 'high' | 'low' | 'auto';
 }
 
-const { image, altFallback, width = 1200 } = Astro.props;
+const { image, altFallback, width = 1200, loading = 'lazy', fetchpriority } = Astro.props;
 const src = urlForSanityImage(image, { width });
 const alt = imageAlt(image, altFallback);
 ---
 
-{src ? <img src={src} alt={alt} width={width} loading="lazy" /> : null}
+{
+  src ? (
+    <img
+      src={src}
+      alt={alt}
+      width={width}
+      loading={loading}
+      fetchpriority={fetchpriority}
+    />
+  ) : null
+}

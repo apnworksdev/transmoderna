@@ -8,23 +8,20 @@ export const homeType = defineType({
   icon: HomeIcon,
   fields: [
     defineField({
-      name: 'intro',
-      title: 'Intro',
-      type: 'array',
-      of: [{ type: 'block' }]
+      name: 'introText',
+      title: 'Intro text',
+      type: 'text',
+      rows: 4,
+      description:
+        'Shown centered on the full-screen video with a typewriter effect after playback starts.'
     }),
     defineField({
       name: 'logo',
-      title: 'Logo',
+      title: 'Footer logo',
       type: 'image',
+      description: 'Logo shown at the bottom after the intro sequence.',
       validation: (Rule) => Rule.required(),
-      fields: [
-        defineField({
-          name: 'alt',
-          title: 'Alt text',
-          type: 'string'
-        })
-      ]
+      fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string' })]
     })
   ],
   preview: {

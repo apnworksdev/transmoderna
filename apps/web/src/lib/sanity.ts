@@ -1,4 +1,4 @@
-import { ABOUT_DOCUMENT_ID, HOME_DOCUMENT_ID } from '@repo/shared';
+import { ABOUT_DOCUMENT_ID, HOME_DOCUMENT_ID, SITE_HEADER_DOCUMENT_ID } from '@repo/shared';
 import { createClient } from '@sanity/client';
 import { createImageUrlBuilder, type SanityImageSource } from '@sanity/image-url';
 import type { PortableTextBlock } from '@portabletext/types';
@@ -10,7 +10,13 @@ const apiVersion = import.meta.env.PUBLIC_SANITY_API_VERSION ?? '2025-08-15';
 const imageBuilder =
   projectId && dataset ? createImageUrlBuilder({ projectId, dataset }) : null;
 
-export type SanityImageWithAlt = SanityImageSource & { alt?: string };
+export type SanityImageWithAlt = SanityImageSource & {
+  alt?: string;
+  asset?: {
+    url?: string;
+    mimeType?: string;
+  };
+};
 
 export type VimeoVideo = {
   url?: string;
@@ -18,8 +24,19 @@ export type VimeoVideo = {
   description?: PortableTextBlock[];
 };
 
+export type SiteMenuLink = {
+  label: string;
+  href: string;
+  image?: SanityImageWithAlt | null;
+};
+
+export type SiteHeaderDocument = {
+  logo?: SanityImageWithAlt;
+  menuLinks?: SiteMenuLink[];
+};
+
 export type HomeDocument = {
-  intro?: PortableTextBlock[];
+  introText?: string;
   logo?: SanityImageWithAlt;
 };
 
@@ -101,6 +118,15 @@ export function urlForSanityImage(
     return undefined;
   }
 
+  const asset =
+    source && typeof source === 'object' && 'asset' in source
+      ? (source as SanityImageWithAlt).asset
+      : undefined;
+
+  if (asset?.mimeType === 'image/svg+xml' && asset.url) {
+    return asset.url;
+  }
+
   try {
     let chain = imageBuilder
       .image(source)
@@ -171,10 +197,33 @@ export async function getHome(): Promise<HomeDocument | null> {
   }
   return client.fetch<HomeDocument | null>(
     `*[_type == "home" && _id == $id][0]{
-      intro,
-      logo { ..., alt }
+      introText,
+      logo { ..., alt, asset->{ url, mimeType } }
     }`,
     { id: HOME_DOCUMENT_ID }
+  );
+}
+
+const siteHeaderImageProjection = `{
+  ...,
+  alt,
+  asset->{ url, mimeType }
+}`;
+
+export async function getSiteHeader(): Promise<SiteHeaderDocument | null> {
+  if (!client) {
+    return null;
+  }
+  return client.fetch<SiteHeaderDocument | null>(
+    `*[_type == "siteHeader" && _id == $id][0]{
+      logo ${siteHeaderImageProjection},
+      menuLinks[]{
+        label,
+        href,
+        image ${siteHeaderImageProjection}
+      }
+    }`,
+    { id: SITE_HEADER_DOCUMENT_ID }
   );
 }
 

@@ -6,7 +6,8 @@
     "dev": "sanity dev",
     "build": "sanity build",
     "deploy": "sanity deploy",
-    "publish:shop": "sanity exec scripts/publish-shop-products.mjs --with-user-token"
+    "publish:shop": "sanity exec scripts/publish-shop-products.mjs --with-user-token",
+    "migrate:home-intro": "sanity exec scripts/migrate-home-intro-text.mjs --with-user-token"
   },
   "dependencies": {
     "@sanity/icons": "^3.7.4",

@@ -1,10 +1,11 @@
-import { ABOUT_DOCUMENT_ID, HOME_DOCUMENT_ID, SHOP_DOCUMENT_ID } from '@repo/shared';
+import { ABOUT_DOCUMENT_ID, HOME_DOCUMENT_ID, SHOP_DOCUMENT_ID, SITE_HEADER_DOCUMENT_ID } from '@repo/shared';
 import {
   BasketIcon,
   CaseIcon,
   CogIcon,
   HomeIcon,
   ImagesIcon,
+  MenuIcon,
   MicrophoneIcon,
   PresentationIcon,
   TagIcon,
@@ -22,6 +23,11 @@ export const structure: StructureResolver = (S) =>
         .id(HOME_DOCUMENT_ID)
         .icon(HomeIcon)
         .child(S.document().schemaType('home').documentId(HOME_DOCUMENT_ID)),
+      S.listItem()
+        .title('Header')
+        .id(SITE_HEADER_DOCUMENT_ID)
+        .icon(MenuIcon)
+        .child(S.document().schemaType('siteHeader').documentId(SITE_HEADER_DOCUMENT_ID)),
       S.listItem()
         .title('About')
         .id(ABOUT_DOCUMENT_ID)

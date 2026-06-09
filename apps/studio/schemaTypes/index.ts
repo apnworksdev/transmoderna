@@ -11,6 +11,8 @@ import { productVariantType } from './documents/productVariant';
 import { shopType } from './documents/shop';
 import { tagType } from './documents/tag';
 import { workType } from './documents/work';
+import { siteHeaderType } from './documents/siteHeader';
+import { siteMenuLinkType } from './objects/siteMenuLink';
 import { connectLinkType } from './objects/connectLink';
 import { connectSectionType } from './objects/connectSection';
 import { contactSectionType } from './objects/contactSection';
@@ -26,12 +28,14 @@ import { shopifyShopType } from './shopify/shopifyShop';
 
 export const schemaTypes: SchemaTypeDefinition[] = [
   vimeoVideoType,
+  siteMenuLinkType,
   portfolioMediaType,
   teamMemberType,
   contactSectionType,
   connectLinkType,
   connectSectionType,
   homeType,
+  siteHeaderType,
   aboutType,
   shopType,
   workType,

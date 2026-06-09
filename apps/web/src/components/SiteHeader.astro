@@ -1,0 +1,89 @@
+---
+import SanityImage from "../components/SanityImage.astro";
+import type { SanityImageWithAlt, SiteMenuLink } from "../lib/sanity";
+
+interface Props {
+  logo?: SanityImageWithAlt | null;
+  menuLinks: SiteMenuLink[];
+  footerLogo?: SanityImageWithAlt | null;
+  /** Home index: chrome hidden until intro completes (CSS + sessionStorage). */
+  deferChromeReveal?: boolean;
+}
+
+const { logo, menuLinks, footerLogo, deferChromeReveal = false } = Astro.props;
+---
+
+<header
+  class="site-header site-chrome"
+  data-site-chrome={deferChromeReveal ? "" : undefined}
+>
+  <button
+    type="button"
+    class="site-header-menu-toggle site-header-pill"
+    data-site-menu-toggle
+    aria-expanded="false"
+    aria-controls="site-menu-container"
+  >
+    <span data-site-menu-toggle-label>Menu</span>
+  </button>
+
+  <a class="site-header-logo" href="/" aria-label="Transmoderna home">
+    {
+      logo ? (
+        <SanityImage
+          image={logo}
+          altFallback="Transmoderna"
+          width={80}
+          loading="eager"
+          fetchpriority="high"
+        />
+      ) : (
+        <span>Transmoderna</span>
+      )
+    }
+  </a>
+
+  <a class="site-header-shop site-header-pill" href="/shop">Shop</a>
+</header>
+
+<div
+  id="site-menu-container"
+  class="site-menu-container"
+  data-site-menu-container
+  hidden
+>
+  <div class="site-menu-background" aria-hidden="true"></div>
+  <nav id="site-menu" class="site-menu" data-site-menu aria-label="Main">
+    <ul class="site-menu-list">
+      {
+        menuLinks.map((link) => (
+          <li class="site-menu-item">
+            <a class="site-menu-link" href={link.href}>
+              <div class="site-menu-media-container">
+                <span class="site-menu-media">
+                  {link.image ? (
+                    <SanityImage
+                      image={link.image}
+                      altFallback={link.label}
+                      width={800}
+                    />
+                  ) : null}
+                </span>
+              </div>
+              <span class="site-menu-label">{link.label}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+  <footer class="site-footer">
+    {
+      footerLogo ? (
+        <SanityImage image={footerLogo} altFallback="Transmoderna" width={480} />
+      ) : (
+        <p>Transmoderna</p>
+      )
+    }
+  </footer>
+</div>

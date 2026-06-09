@@ -1,0 +1,106 @@
+/* Home (index) page — video, intro text, footer */
+
+body.page-index {
+  margin: 0;
+  overflow: hidden;
+}
+
+.page-index-shell {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--background-color);
+  color: var(--foreground-color);
+}
+
+.page-index-video {
+  position: absolute;
+  inset: 0;
+  transition: filter var(--duration-fast) var(--ease);
+}
+
+.page-index-video iframe,
+.page-index-video video {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  object-fit: cover;
+  opacity: 0;
+}
+
+.page-index-video.is-visible iframe,
+.page-index-video.is-visible video {
+  animation: fade-in var(--duration-reveal) var(--ease) forwards;
+}
+
+@keyframes fade-in {
+  to {
+    opacity: 1;
+  }
+}
+
+body.site-menu-open.page-index .page-index-video {
+  filter: blur(22px) brightness(0.45);
+}
+
+.page-index-intro-text {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 116px;
+  text-align: center;
+  pointer-events: none;
+  font-weight: var(--font-weight-light);
+  font-size: var(--font-size-xs);
+  line-height: 20px;
+  text-transform: uppercase;
+  color: var(--gray-color);
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease);
+}
+
+.page-index-intro-text.is-visible {
+  opacity: 1;
+}
+
+.page-index-intro-text.is-hiding {
+  opacity: 0;
+}
+
+.page-index-intro-text[hidden] {
+  display: none;
+}
+
+body.page-index .site-chrome {
+  opacity: 0;
+  transition: opacity var(--duration-slow) var(--ease) var(--delay-short);
+}
+
+html.intro-complete body.page-index .site-chrome {
+  opacity: 1;
+}
+
+html.intro-pending body.page-index [data-site-chrome] {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-index-video.is-visible iframe,
+  .page-index-video.is-visible video {
+    animation: none;
+    opacity: 1;
+  }
+
+  .page-index-intro-text {
+    transition: none;
+  }
+
+  body.page-index .site-chrome {
+    transition: none;
+  }
+}
