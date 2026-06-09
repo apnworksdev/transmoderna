@@ -1,0 +1,13 @@
+---
+import { normalizePlainText } from '../lib/portableText';
+
+interface Props {
+  text?: unknown;
+  class?: string;
+}
+
+const { text, class: className } = Astro.props;
+const content = normalizePlainText(text);
+---
+
+{content ? <div class:list={['plain-text', className]}>{content}</div> : null}

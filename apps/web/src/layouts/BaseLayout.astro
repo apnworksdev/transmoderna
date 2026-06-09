@@ -8,7 +8,10 @@ import {
   SITE_MENU_FALLBACK_LINKS
 } from '@repo/shared';
 import '../styles/index.css';
+import '../styles/components/fixed-footer.css';
 import '../styles/components/nav.css';
+
+export type FixedFooterSize = 'big' | 'small' | 'hidden';
 
 interface Props {
   title?: string;
@@ -16,9 +19,16 @@ interface Props {
   variant?: 'default' | 'index';
   /** Home footer logo — pass from index to avoid a duplicate Sanity fetch. */
   footerLogo?: SanityImageWithAlt | null;
+  /** Fixed bottom bar height. Use the `fixedFooter` slot for its content. */
+  fixedFooter?: FixedFooterSize;
 }
 
-const { title = 'Transmoderna', variant = 'default', footerLogo: footerLogoProp } = Astro.props;
+const {
+  title = 'Transmoderna',
+  variant = 'default',
+  footerLogo: footerLogoProp,
+  fixedFooter = 'hidden'
+} = Astro.props;
 const isIndex = variant === 'index';
 const siteHeader = await getSiteHeader();
 
@@ -68,7 +78,13 @@ if (isIndex) {
       ) : null
     }
   </head>
-  <body class:list={[{ 'page-index': isIndex }]}>
+  <body
+    class:list={[
+      { 'page-index': isIndex },
+      fixedFooter === 'small' ? 'fixed-footer-small' : null,
+      fixedFooter === 'big' ? 'fixed-footer-big' : null
+    ]}
+  >
     <SiteHeader
       logo={siteHeader?.logo}
       menuLinks={menuLinks}
@@ -78,9 +94,16 @@ if (isIndex) {
 
     <slot />
 
+    {
+      fixedFooter !== 'hidden' ? (
+        <div class="site-fixed-footer" data-fixed-footer={fixedFooter}>
+          <slot name="fixedFooter" />
+        </div>
+      ) : null
+    }
+
     <script>
-      import { initLayout } from '../scripts/layout.ts';
-      initLayout();
+      import '../scripts/init.ts';
     </script>
   </body>
 </html>

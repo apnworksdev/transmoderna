@@ -1,4 +1,9 @@
-import { ABOUT_DOCUMENT_ID, HOME_DOCUMENT_ID, SITE_HEADER_DOCUMENT_ID } from '@repo/shared';
+import {
+  ABOUT_DOCUMENT_ID,
+  HOME_DOCUMENT_ID,
+  SITE_HEADER_DOCUMENT_ID,
+  WORK_PAGE_DOCUMENT_ID
+} from '@repo/shared';
 import { createClient } from '@sanity/client';
 import { createImageUrlBuilder, type SanityImageSource } from '@sanity/image-url';
 import type { PortableTextBlock } from '@portabletext/types';
@@ -24,6 +29,13 @@ export type VimeoVideo = {
   description?: PortableTextBlock[];
 };
 
+export type WorkMedia = {
+  url?: string;
+  videoSrc?: string;
+  image?: SanityImageWithAlt;
+  footnote?: string;
+};
+
 export type SiteMenuLink = {
   label: string;
   href: string;
@@ -44,9 +56,19 @@ export type WorkDocument = {
   _id: string;
   title?: string;
   year?: number;
-  description?: PortableTextBlock[];
-  video?: VimeoVideo;
+  description?: string;
+  media?: WorkMedia[];
   sortOrder?: number;
+};
+
+export type WorkPageClient = {
+  name?: string;
+};
+
+export type WorkPageDocument = {
+  backgroundImage?: SanityImageWithAlt;
+  clients?: WorkPageClient[];
+  works?: WorkDocument[];
 };
 
 export type ArtistDocument = {
@@ -150,31 +172,7 @@ export function imageAlt(
   return typeof alt === 'string' && alt.trim() ? alt.trim() : fallback;
 }
 
-export function vimeoEmbedUrl(url: string | undefined): string | undefined {
-  if (!url?.trim()) {
-    return undefined;
-  }
-  try {
-    const parsed = new URL(url.trim());
-    const host = parsed.hostname.toLowerCase();
-    let id: string | undefined;
-
-    if (host === 'player.vimeo.com') {
-      const match = parsed.pathname.match(/\/video\/(\d+)/);
-      id = match?.[1];
-    } else if (host === 'vimeo.com' || host.endsWith('.vimeo.com')) {
-      const segments = parsed.pathname.split('/').filter(Boolean);
-      id = segments.find((s) => /^\d+$/.test(s)) ?? segments.at(-1);
-      if (id && !/^\d+$/.test(id)) {
-        id = undefined;
-      }
-    }
-
-    return id ? `https://player.vimeo.com/video/${id}` : undefined;
-  } catch {
-    return undefined;
-  }
-}
+export { resolveVimeoVideoSrc, vimeoEmbedUrl } from './vimeo';
 
 const readToken = import.meta.env.SANITY_API_READ_TOKEN?.trim();
 
@@ -227,20 +225,81 @@ export async function getSiteHeader(): Promise<SiteHeaderDocument | null> {
   );
 }
 
+const workDocumentProjection = `{
+  _id,
+  title,
+  year,
+  description,
+  media[]{
+    url,
+    footnote,
+    image { ..., alt, asset->{ url, mimeType } }
+  },
+  sortOrder
+}`;
+
+async function enrichWorks(works: WorkDocument[]): Promise<WorkDocument[]> {
+  const { resolveVimeoVideoSrc } = await import('./vimeo');
+  const { normalizePlainText } = await import('./portableText');
+
+  return Promise.all(
+    works.map(async (work) => {
+      const description = normalizePlainText(work.description) || undefined;
+
+      if (!work.media?.length) {
+        return { ...work, description };
+      }
+
+      const media = await Promise.all(
+        work.media.map(async (entry) => {
+          const url = entry.url?.trim();
+          if (!url) {
+            return entry;
+          }
+          const videoSrc = await resolveVimeoVideoSrc(url);
+          return videoSrc ? { ...entry, videoSrc } : entry;
+        })
+      );
+
+      return { ...work, description, media };
+    })
+  );
+}
+
 export async function getWorks(): Promise<WorkDocument[]> {
   if (!client) {
     return [];
   }
-  return client.fetch<WorkDocument[]>(
-    `*[_type == "work"] | order(sortOrder asc, year desc){
-      _id,
-      title,
-      year,
-      description,
-      video,
-      sortOrder
-    }`
+  const works = await client.fetch<WorkDocument[]>(
+    `*[_type == "work"] | order(sortOrder asc, year desc) ${workDocumentProjection}`
   );
+
+  return enrichWorks(works);
+}
+
+export async function getWorkPage(): Promise<WorkPageDocument | null> {
+  if (!client) {
+    return null;
+  }
+
+  const page = await client.fetch<WorkPageDocument | null>(
+    `*[_type == "workPage" && _id == $id][0]{
+      backgroundImage { ..., alt, asset->{ url, mimeType } },
+      clients[]{ name },
+      "works": workItems[]->${workDocumentProjection}
+    }`,
+    { id: WORK_PAGE_DOCUMENT_ID }
+  );
+
+  if (!page) {
+    return null;
+  }
+
+  const works = (page.works ?? []).filter((work): work is WorkDocument => Boolean(work?._id));
+  return {
+    ...page,
+    works: await enrichWorks(works)
+  };
 }
 
 export async function getExhibitions(): Promise<ExhibitionDocument[]> {

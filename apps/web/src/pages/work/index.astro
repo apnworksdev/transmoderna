@@ -1,48 +1,84 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import PortableTextHtml from '../../components/PortableTextHtml.astro';
-import VimeoEmbed from '../../components/VimeoEmbed.astro';
-import { getWorks } from '../../lib/sanity';
+import PlainText from '../../components/PlainText.astro';
+import ClientsMarquee from '../../components/ClientsMarquee.astro';
+import WorkMedia from '../../components/WorkMedia.astro';
+import { getWorkPage, imageAlt, urlForSanityImage } from '../../lib/sanity';
+import '../../styles/pages/work.css';
 
-const works = await getWorks();
+const workPage = await getWorkPage();
+const works = workPage?.works ?? [];
+const clients = workPage?.clients ?? [];
+const backgroundSrc = urlForSanityImage(workPage?.backgroundImage, { width: 2400 });
+const backgroundAlt = imageAlt(workPage?.backgroundImage, 'Work page background');
 ---
 
-<BaseLayout title="Work — Transmoderna">
-  <main>
-    <h1>Work</h1>
+<BaseLayout title="Work — Transmoderna" fixedFooter="big">
+  <ClientsMarquee slot="fixedFooter" clients={clients} />
+
+  <main class="page-work">
     {
-      works.length === 0 ? (
-        <p>No work items yet.</p>
-      ) : (
-        <ul>
-          {
-            works.map((item) => (
-              <li>
-                <article>
-                  <details>
-                    <summary>
-                      <h2>{item.title}</h2>
-                      {item.year != null ? (
-                        <time datetime={String(item.year)}>{item.year}</time>
-                      ) : null}
-                    </summary>
-                    {item.description ? (
-                      <PortableTextHtml blocks={item.description} />
-                    ) : null}
-                    {item.video?.title ? <h3>{item.video.title}</h3> : null}
-                    {item.video?.url ? (
-                      <VimeoEmbed url={item.video.url} title={item.video.title} />
-                    ) : null}
-                    {item.video?.description ? (
-                      <PortableTextHtml blocks={item.video.description} />
-                    ) : null}
-                  </details>
-                </article>
-              </li>
-            ))
-          }
-        </ul>
-      )
+      backgroundSrc ? (
+        <div class="page-work-background-container">
+          <img
+            class="page-work-background"
+            src={backgroundSrc}
+            alt={backgroundAlt}
+            width={2400}
+            loading="eager"
+            fetchpriority="high"
+          />
+        </div>
+      ) : null
     }
+
+    <section class="page-work-content">
+      {
+        works.length === 0 ? (
+          <p>No work items yet.</p>
+        ) : (
+          <ul class="page-work-list" data-work-accordion>
+            {
+              works.map((item) => (
+                <li>
+                  <article>
+                    <details>
+                      <summary>
+                        <span class="page-work-list-item-summary">
+                          <h2>{item.title}</h2>
+                          {item.year != null ? (
+                            <time datetime={String(item.year)}>{item.year}</time>
+                          ) : null}
+                        </span>
+                      </summary>
+                      <div class="page-work-list-item-content">
+                        {item.media?.length ? (
+                          <ul class="page-work-list-item-media-list">
+                            {item.media.map((entry, mediaIndex) => (
+                              <li>
+                                <WorkMedia
+                                  media={entry}
+                                  title={item.title ?? 'Work'}
+                                  index={mediaIndex + 1}
+                                />
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                        <div class="page-work-list-item-description">
+                          <PlainText text={item.description} />
+                        </div>
+                      </div>
+                    </details>
+                  </article>
+                </li>
+              ))
+            }
+          </ul>
+        )
+      }
+
+    </section>
+    <ClientsMarquee clients={clients} />
   </main>
 </BaseLayout>

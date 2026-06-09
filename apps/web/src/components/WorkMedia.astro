@@ -1,0 +1,37 @@
+---
+import type { WorkMedia } from '../lib/sanity';
+import HtmlVideo from './HtmlVideo.astro';
+import SanityImage from './SanityImage.astro';
+
+interface Props {
+  media?: WorkMedia;
+  title: string;
+  index: number;
+}
+
+const { media, title, index } = Astro.props;
+const vimeoUrl = media?.url?.trim();
+const videoSrc = media?.videoSrc;
+const showVideo = Boolean(vimeoUrl && videoSrc);
+const showImage = Boolean(media?.image && (!vimeoUrl || !videoSrc));
+const hasMedia = showVideo || showImage;
+const hasFootnote = Boolean(media?.footnote?.trim());
+---
+
+{
+  hasMedia ? (
+    <>
+      {showVideo ? (
+        <HtmlVideo src={videoSrc} title={title} />
+      ) : (
+        <SanityImage image={media?.image} altFallback={title} />
+      )}
+      {hasFootnote ? (
+        <p class="work-media-footnote">
+          <span class="work-media-footnote-index">{index}</span>
+          {media?.footnote}
+        </p>
+      ) : null}
+    </>
+  ) : null
+}

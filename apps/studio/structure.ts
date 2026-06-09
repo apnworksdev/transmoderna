@@ -1,8 +1,17 @@
-import { ABOUT_DOCUMENT_ID, HOME_DOCUMENT_ID, SHOP_DOCUMENT_ID, SITE_HEADER_DOCUMENT_ID } from '@repo/shared';
+import {
+  ABOUT_DOCUMENT_ID,
+  HOME_DOCUMENT_ID,
+  SHOP_DOCUMENT_ID,
+  SITE_HEADER_DOCUMENT_ID,
+  WORK_PAGE_DOCUMENT_ID
+} from '@repo/shared';
 import {
   BasketIcon,
   CaseIcon,
   CogIcon,
+  ControlsIcon,
+  DocumentIcon,
+  DocumentsIcon,
   HomeIcon,
   ImagesIcon,
   MenuIcon,
@@ -19,35 +28,67 @@ export const structure: StructureResolver = (S) =>
     .title('Content')
     .items([
       S.listItem()
-        .title('Home')
-        .id(HOME_DOCUMENT_ID)
-        .icon(HomeIcon)
-        .child(S.document().schemaType('home').documentId(HOME_DOCUMENT_ID)),
-      S.listItem()
-        .title('Header')
-        .id(SITE_HEADER_DOCUMENT_ID)
-        .icon(MenuIcon)
-        .child(S.document().schemaType('siteHeader').documentId(SITE_HEADER_DOCUMENT_ID)),
-      S.listItem()
-        .title('About')
-        .id(ABOUT_DOCUMENT_ID)
-        .icon(UsersIcon)
-        .child(S.document().schemaType('about').documentId(ABOUT_DOCUMENT_ID)),
-      S.listItem()
-        .title('Shop')
-        .id(SHOP_DOCUMENT_ID)
-        .icon(BasketIcon)
-        .child(S.document().schemaType('shop').documentId(SHOP_DOCUMENT_ID)),
+        .title('Site')
+        .icon(ControlsIcon)
+        .child(
+          S.list()
+            .title('Site')
+            .items([
+              S.listItem()
+                .title('Header')
+                .id(SITE_HEADER_DOCUMENT_ID)
+                .icon(MenuIcon)
+                .child(S.document().schemaType('siteHeader').documentId(SITE_HEADER_DOCUMENT_ID))
+            ])
+        ),
       S.divider(),
-      S.documentTypeListItem('work').title('Work').icon(CaseIcon),
-      S.documentTypeListItem('exhibition').title('Exhibitions').icon(PresentationIcon),
-      S.documentTypeListItem('portfolioItem').title('Portfolio').icon(ImagesIcon),
-      S.documentTypeListItem('podcast').title('Podcasts').icon(MicrophoneIcon),
+      S.listItem()
+        .title('Pages')
+        .icon(DocumentIcon)
+        .child(
+          S.list()
+            .title('Pages')
+            .items([
+              S.listItem()
+                .title('Home')
+                .id(HOME_DOCUMENT_ID)
+                .icon(HomeIcon)
+                .child(S.document().schemaType('home').documentId(HOME_DOCUMENT_ID)),
+              S.listItem()
+                .title('About')
+                .id(ABOUT_DOCUMENT_ID)
+                .icon(UsersIcon)
+                .child(S.document().schemaType('about').documentId(ABOUT_DOCUMENT_ID)),
+              S.listItem()
+                .title('Shop')
+                .id(SHOP_DOCUMENT_ID)
+                .icon(BasketIcon)
+                .child(S.document().schemaType('shop').documentId(SHOP_DOCUMENT_ID)),
+              S.listItem()
+                .title('Work')
+                .id(WORK_PAGE_DOCUMENT_ID)
+                .icon(CaseIcon)
+                .child(S.document().schemaType('workPage').documentId(WORK_PAGE_DOCUMENT_ID))
+            ])
+        ),
       S.divider(),
-      S.documentTypeListItem('product').title('Products').icon(BasketIcon),
-      S.documentTypeListItem('productVariant').title('Product variants').icon(CogIcon),
-      S.documentTypeListItem('brand').title('Brands'),
-      S.documentTypeListItem('tag').title('Tags').icon(TagIcon),
-      S.divider(),
-      S.documentTypeListItem('artist').title('Artists').icon(UserIcon)
+      S.listItem()
+        .title('Items')
+        .icon(DocumentsIcon)
+        .child(
+          S.list()
+            .title('Items')
+            .items([
+              S.documentTypeListItem('work').title('Work').icon(CaseIcon),
+              S.documentTypeListItem('exhibition').title('Exhibitions').icon(PresentationIcon),
+              S.documentTypeListItem('portfolioItem').title('Portfolio').icon(ImagesIcon),
+              S.documentTypeListItem('podcast').title('Podcasts').icon(MicrophoneIcon),
+              S.documentTypeListItem('artist').title('Artists').icon(UserIcon),
+              S.divider(),
+              S.documentTypeListItem('product').title('Products').icon(BasketIcon),
+              S.documentTypeListItem('productVariant').title('Product variants').icon(CogIcon),
+              S.documentTypeListItem('brand').title('Brands'),
+              S.documentTypeListItem('tag').title('Tags').icon(TagIcon)
+            ])
+        )
     ]);

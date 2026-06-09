@@ -22,13 +22,14 @@ export const workType = defineType({
     defineField({
       name: 'description',
       title: 'Description',
-      type: 'array',
-      of: [{ type: 'block' }]
+      type: 'text',
+      rows: 6
     }),
     defineField({
-      name: 'video',
-      title: 'Video',
-      type: 'vimeoVideo'
+      name: 'media',
+      title: 'Media',
+      type: 'array',
+      of: [{ type: 'workMedia' }]
     }),
     defineField({
       name: 'sortOrder',

@@ -1,0 +1,37 @@
+---
+interface Props {
+  src?: string;
+  title?: string;
+}
+
+const { src, title } = Astro.props;
+---
+
+{
+  src ? (
+    <div class="html-video-wrap">
+      <button
+        type="button"
+        class="html-video-mute-toggle"
+        data-html-video-mute-toggle
+        aria-label="Unmute video"
+        aria-pressed="false"
+      >
+        Unmute
+      </button>
+      <video
+        class="html-video"
+        data-autoplay-video
+        title={title}
+        muted
+        loop
+        playsinline
+        preload="auto"
+        disablepictureinpicture
+        disableRemotePlayback
+      >
+        <source src={src} type="video/mp4" />
+      </video>
+    </div>
+  ) : null
+}

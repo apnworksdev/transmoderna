@@ -52,7 +52,7 @@ async function resolveVariantGid(handle: string): Promise<string | undefined> {
   return match?.id ?? json.variants[0]?.id;
 }
 
-function init() {
+export function initShopCart(): void {
   const root = getShopRoot();
   if (!root) return;
 
@@ -175,6 +175,3 @@ function init() {
     }
   })();
 }
-
-init();
-document.addEventListener('astro:page-load', init);

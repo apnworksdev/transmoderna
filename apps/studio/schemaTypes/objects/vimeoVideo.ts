@@ -1,6 +1,6 @@
 import { defineField, defineType } from 'sanity';
 
-function isVimeoUrl(value: unknown): boolean {
+export function isVimeoUrl(value: unknown): boolean {
   if (typeof value !== 'string' || !value.trim()) {
     return false;
   }

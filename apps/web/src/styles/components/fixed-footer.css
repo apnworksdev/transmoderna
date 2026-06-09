@@ -1,0 +1,36 @@
+/* Fixed bottom bar — height set per page via BaseLayout `fixedFooter` prop */
+
+:root {
+  --fixed-footer-height: 232px;
+}
+
+body.fixed-footer-small {
+  padding-bottom: calc(var(--fixed-footer-height) * 0.25);
+}
+
+body.fixed-footer-small .site-fixed-footer {
+  transform: translateY(75%);
+}
+
+body.fixed-footer-big {
+  padding-bottom: calc(var(--fixed-footer-height) * 0.5);
+}
+
+body.fixed-footer-big .site-fixed-footer {
+  transform: translateY(50%);
+}
+
+.site-fixed-footer {
+  position: fixed;
+  left: -50%;
+  width: 200%;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  height: var(--fixed-footer-height);
+  background-color: var(--background-color);
+  filter: blur(80px);
+  overflow: hidden;
+  pointer-events: none;
+}

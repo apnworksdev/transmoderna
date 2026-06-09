@@ -1,0 +1,34 @@
+---
+import type { WorkPageClient } from '../lib/sanity';
+
+interface Props {
+  clients: WorkPageClient[];
+}
+
+const { clients } = Astro.props;
+const items = clients
+  .map((client) => client.name?.trim())
+  .filter((name): name is string => Boolean(name));
+
+if (!items.length) {
+  return null;
+}
+---
+
+<section class="clients-marquee" aria-label="Clients">
+  <div class="clients-marquee__viewport">
+    <div class="clients-marquee__track">
+      {
+        [0, 1].map((copy) => (
+          <ul class="clients-marquee__list" aria-hidden={copy === 1 ? true : undefined}>
+            {
+              items.map((name) => (
+                <li class="clients-marquee__item">{name}</li>
+              ))
+            }
+          </ul>
+        ))
+      }
+    </div>
+  </div>
+</section>
