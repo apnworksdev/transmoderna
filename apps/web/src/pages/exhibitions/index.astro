@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import SanityImage from '../../components/SanityImage.astro';
 import { getExhibitionsPage, imageAlt, urlForSanityImage } from '../../lib/sanity';
 import { EXHIBITIONS_VIEW_STORAGE_KEY } from '../../lib/exhibitions-view';
 import '../../styles/pages/exhibitions.css';
@@ -22,6 +21,16 @@ const fullPageBackgroundAlt = imageAlt(
   'Exhibitions full view background'
 );
 
+const thumbnailViewItems = exhibitions.map((item) => {
+  const title = item.title ?? 'Exhibition';
+  return {
+    title,
+    href: item.slug?.current ? `/exhibitions/${item.slug.current}` : null,
+    thumbSrc: urlForSanityImage(item.thumbnailImage, { width: 1200 }),
+    thumbAlt: imageAlt(item.thumbnailImage, title)
+  };
+});
+
 const fullViewItems = exhibitions.map((item) => {
   const title = item.title ?? 'Exhibition';
   return {
@@ -32,13 +41,13 @@ const fullViewItems = exhibitions.map((item) => {
   };
 });
 
-const slotOffsets = [-3, -2, -1, 0, 1, 2, 3];
+const fullSlotOffsets = [-3, -2, -1, 0, 1, 2, 3];
+const thumbnailSlotOffsets = [-2, -1, 0, 1, 2];
 
 function wrapExhibitionIndex(index: number, length: number): number {
   return ((index % length) + length) % length;
 }
 ---
-
 
 <BaseLayout title="Exhibitions — Transmoderna">
   <script
@@ -91,41 +100,108 @@ function wrapExhibitionIndex(index: number, length: number): number {
         <p>No exhibitions yet.</p>
       ) : (
         <>
-          <div class="page-exhibitions-thumbnail" data-exhibitions-thumbnail>
-            <ul class="page-exhibitions-list">
-              {
-                exhibitions.map((item) => {
-                  const href = item.slug?.current ? `/exhibitions/${item.slug.current}` : undefined;
-                  const title = item.title ?? 'Exhibition';
+          <div
+            class="page-exhibitions-thumbnail"
+            data-exhibitions-thumbnail
+            data-exhibitions-items={JSON.stringify(thumbnailViewItems)}
+          >
+            <p class="sr-only" data-exhibitions-thumb-live aria-live="polite" aria-atomic="true">
+              {thumbnailViewItems[0]?.title}
+            </p>
 
-                  if (!href) {
+            <div
+              class="page-exhibitions-thumbnail-scroller"
+              data-exhibitions-thumbnail-scroller
+              tabindex="0"
+            >
+              <ul class="page-exhibitions-thumbnail-track" data-exhibitions-thumbnail-track>
+                {
+                  thumbnailSlotOffsets.map((offset) => {
+                    const item =
+                      thumbnailViewItems[wrapExhibitionIndex(offset, thumbnailViewItems.length)];
+                    const isActive = offset === 0;
+
                     return (
-                      <li class="page-exhibitions-item">
-                        <article>
-                          {item.thumbnailImage ? (
-                            <SanityImage image={item.thumbnailImage} altFallback={title} width={600} />
-                          ) : null}
-                          <h2 class="page-exhibitions-item-title">{item.title}</h2>
-                        </article>
+                      <li
+                        class:list={[
+                          'page-exhibitions-thumbnail-slide',
+                          { 'is-active': isActive }
+                        ]}
+                        data-exhibitions-thumb-slot={offset}
+                      >
+                        {item?.href ? (
+                          <a class="page-exhibitions-thumbnail-slide-link" href={item.href}>
+                            <figure class="page-exhibitions-thumbnail-slide-figure">
+                              {
+                                item.thumbSrc ? (
+                                  <img
+                                    class="page-exhibitions-thumbnail-slide-image"
+                                    src={item.thumbSrc}
+                                    alt={item.thumbAlt}
+                                    width={1200}
+                                    loading={isActive ? 'eager' : 'lazy'}
+                                    decoding="async"
+                                  />
+                                ) : null
+                              }
+                              <figcaption class="page-exhibitions-thumbnail-slide-title">
+                                {item.title}
+                              </figcaption>
+                            </figure>
+                          </a>
+                        ) : (
+                          <figure class="page-exhibitions-thumbnail-slide-figure">
+                            {
+                              item?.thumbSrc ? (
+                                <img
+                                  class="page-exhibitions-thumbnail-slide-image"
+                                  src={item.thumbSrc}
+                                  alt={item.thumbAlt}
+                                  width={1200}
+                                  loading={isActive ? 'eager' : 'lazy'}
+                                  decoding="async"
+                                />
+                              ) : null
+                            }
+                            <figcaption class="page-exhibitions-thumbnail-slide-title">
+                              {item?.title}
+                            </figcaption>
+                          </figure>
+                        )}
                       </li>
                     );
-                  }
-
-                  return (
-                    <li class="page-exhibitions-item">
-                      <article>
-                        <a class="page-exhibitions-item-link" href={href}>
-                          {item.thumbnailImage ? (
-                            <SanityImage image={item.thumbnailImage} altFallback={title} width={600} />
-                          ) : null}
-                          <h2 class="page-exhibitions-item-title">{item.title}</h2>
-                        </a>
-                      </article>
-                    </li>
-                  );
-                })
-              }
-            </ul>
+                  })
+                }
+                <li
+                  class="page-exhibitions-thumbnail-slide"
+                  data-exhibitions-thumb-slot="enter-right"
+                  hidden
+                  aria-hidden="true"
+                >
+                  <figure class="page-exhibitions-thumbnail-slide-figure">
+                    <img
+                      class="page-exhibitions-thumbnail-slide-image"
+                      alt=""
+                      decoding="async"
+                    />
+                  </figure>
+                </li>
+                <li
+                  class="page-exhibitions-thumbnail-slide"
+                  data-exhibitions-thumb-slot="enter-left"
+                  hidden
+                  aria-hidden="true"
+                >
+                  <figure class="page-exhibitions-thumbnail-slide-figure">
+                    <img
+                      class="page-exhibitions-thumbnail-slide-image"
+                      alt=""
+                      decoding="async"
+                    />
+                  </figure>
+                </li>
+              </ul>
+            </div>
           </div>
 
           <div
@@ -161,7 +237,7 @@ function wrapExhibitionIndex(index: number, length: number): number {
             >
               <ul class="page-exhibitions-full-list" data-exhibitions-full-list>
                 {
-                  slotOffsets.map((offset) => {
+                  fullSlotOffsets.map((offset) => {
                     const item = fullViewItems[wrapExhibitionIndex(offset, fullViewItems.length)];
                     const isActive = offset === 0;
 

@@ -1,3 +1,16 @@
+import {
+  getStoredExhibitionsActiveIndex,
+  setStoredExhibitionsActiveIndex
+} from '../lib/exhibitions-view.ts';
+import {
+  createImagePreloader,
+  createKeyNavigation,
+  createTouchNavigation,
+  createWheelNavigation,
+  throttleRAF,
+  wrapIndex
+} from './exhibitions-swiper-shared.ts';
+
 type SwiperCleanup = () => void;
 
 export type ExhibitionFullItem = {
@@ -8,26 +21,7 @@ export type ExhibitionFullItem = {
 };
 
 const WINDOW_RADIUS = 3;
-const WHEEL_THRESHOLD = 60;
-const WHEEL_DECAY_MS = 150;
 const SLOT_OFFSETS = [-3, -2, -1, 0, 1, 2, 3] as const;
-
-function wrapIndex(index: number, length: number): number {
-  return ((index % length) + length) % length;
-}
-
-function throttleRAF(fn: () => void): () => void {
-  let frame = 0;
-  return () => {
-    if (frame) {
-      return;
-    }
-    frame = requestAnimationFrame(() => {
-      frame = 0;
-      fn();
-    });
-  };
-}
 
 export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCleanup | null {
   const fullView = root.querySelector<HTMLElement>('[data-exhibitions-full]');
@@ -57,21 +51,9 @@ export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCl
   }
 
   const total = items.length;
-  let activeIndex = 0;
+  let activeIndex = getStoredExhibitionsActiveIndex(total);
   let activeLayerIndex = 0;
-  let wheelAccumulator = 0;
-  let wheelDecayTimer = 0;
-  let touchStartY = 0;
-  const preloaded = new Set<string>();
-
-  const preload = (src: string | undefined) => {
-    if (!src || preloaded.has(src)) {
-      return;
-    }
-    const image = new Image();
-    image.src = src;
-    preloaded.add(src);
-  };
+  const preload = createImagePreloader();
 
   const preloadAround = (index: number) => {
     for (let offset = -WINDOW_RADIUS; offset <= WINDOW_RADIUS; offset += 1) {
@@ -110,6 +92,7 @@ export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCl
     });
 
     fullView.dataset.exhibitionsActiveIndex = String(activeIndex);
+    setStoredExhibitionsActiveIndex(activeIndex);
 
     if (liveRegion) {
       liveRegion.textContent = items[activeIndex]?.title ?? '';
@@ -151,99 +134,42 @@ export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCl
     fillSlots();
   };
 
-  const resetWheelAccumulator = () => {
-    window.clearTimeout(wheelDecayTimer);
-    wheelDecayTimer = window.setTimeout(() => {
-      wheelAccumulator = 0;
-    }, WHEEL_DECAY_MS);
+  const navigation = {
+    total,
+    getActiveIndex: () => activeIndex,
+    goTo
   };
 
-  const onWheel = (event: WheelEvent) => {
-    if (total < 2) {
-      return;
-    }
-
-    event.preventDefault();
-    wheelAccumulator += event.deltaY;
-    resetWheelAccumulator();
-
-    if (wheelAccumulator >= WHEEL_THRESHOLD) {
-      goTo(activeIndex + 1);
-      wheelAccumulator = 0;
-      window.clearTimeout(wheelDecayTimer);
-      return;
-    }
-
-    if (wheelAccumulator <= -WHEEL_THRESHOLD) {
-      goTo(activeIndex - 1);
-      wheelAccumulator = 0;
-      window.clearTimeout(wheelDecayTimer);
-    }
-  };
-
-  const onTouchStart = (event: TouchEvent) => {
-    touchStartY = event.touches[0]?.clientY ?? 0;
-  };
-
-  const onTouchEnd = (event: TouchEvent) => {
-    if (total < 2) {
-      return;
-    }
-
-    const touchEndY = event.changedTouches[0]?.clientY ?? touchStartY;
-    const deltaY = touchStartY - touchEndY;
-
-    if (Math.abs(deltaY) < 40) {
-      return;
-    }
-
-    if (deltaY > 0) {
-      goTo(activeIndex + 1);
-    } else {
-      goTo(activeIndex - 1);
-    }
-  };
+  const wheel = createWheelNavigation(navigation);
+  const touch = createTouchNavigation(navigation);
+  const keys = createKeyNavigation(navigation);
 
   const onResize = throttleRAF(() => {
     fillSlots();
   });
 
-  const onKeyDown = (event: KeyboardEvent) => {
-    if (total < 2) {
-      return;
-    }
-
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      goTo(activeIndex + 1);
-    } else if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      goTo(activeIndex - 1);
-    }
-  };
-
-  scroller.addEventListener('wheel', onWheel, { passive: false });
-  scroller.addEventListener('touchstart', onTouchStart, { passive: true });
-  scroller.addEventListener('touchend', onTouchEnd, { passive: true });
+  scroller.addEventListener('wheel', wheel.onWheel, { passive: false });
+  scroller.addEventListener('touchstart', touch.onTouchStart, { passive: true });
+  scroller.addEventListener('touchend', touch.onTouchEnd, { passive: true });
   window.addEventListener('resize', onResize);
-  scroller.addEventListener('keydown', onKeyDown);
+  scroller.addEventListener('keydown', keys.onKeyDown);
 
-  const firstSrc = items[0]?.bgSrc;
-  if (firstSrc && bgLayers[0]) {
-    bgLayers[0].src = firstSrc;
-    bgLayers[0].alt = items[0]?.bgAlt ?? '';
+  const initialItem = items[activeIndex];
+  if (initialItem?.bgSrc && bgLayers[0]) {
+    bgLayers[0].src = initialItem.bgSrc;
+    bgLayers[0].alt = initialItem.bgAlt;
     bgLayers[0].classList.add('is-active');
-    preloadAround(0);
+    preloadAround(activeIndex);
   }
 
   fillSlots();
 
   return () => {
-    scroller.removeEventListener('wheel', onWheel);
-    scroller.removeEventListener('touchstart', onTouchStart);
-    scroller.removeEventListener('touchend', onTouchEnd);
+    scroller.removeEventListener('wheel', wheel.onWheel);
+    scroller.removeEventListener('touchstart', touch.onTouchStart);
+    scroller.removeEventListener('touchend', touch.onTouchEnd);
     window.removeEventListener('resize', onResize);
-    scroller.removeEventListener('keydown', onKeyDown);
-    window.clearTimeout(wheelDecayTimer);
+    scroller.removeEventListener('keydown', keys.onKeyDown);
+    wheel.destroy();
   };
 }
