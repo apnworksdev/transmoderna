@@ -1,60 +1,197 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import SanityImage from '../../components/SanityImage.astro';
-import { getExhibitions } from '../../lib/sanity';
+import { getExhibitionsPage, imageAlt, urlForSanityImage } from '../../lib/sanity';
+import { EXHIBITIONS_VIEW_STORAGE_KEY } from '../../lib/exhibitions-view';
+import '../../styles/pages/exhibitions.css';
 
-const exhibitions = await getExhibitions();
+const exhibitionsPage = await getExhibitionsPage();
+const exhibitions = exhibitionsPage?.exhibitions ?? [];
+const thumbnailBackgroundSrc = urlForSanityImage(exhibitionsPage?.thumbnailBackgroundImage, {
+  width: 2400
+});
+const thumbnailBackgroundAlt = imageAlt(
+  exhibitionsPage?.thumbnailBackgroundImage,
+  'Exhibitions thumbnail view background'
+);
+const fullPageBackgroundSrc = urlForSanityImage(exhibitionsPage?.fullBackgroundImage, {
+  width: 2400
+});
+const fullPageBackgroundAlt = imageAlt(
+  exhibitionsPage?.fullBackgroundImage,
+  'Exhibitions full view background'
+);
+
+const fullViewItems = exhibitions.map((item) => {
+  const title = item.title ?? 'Exhibition';
+  return {
+    title,
+    href: item.slug?.current ? `/exhibitions/${item.slug.current}` : null,
+    bgSrc: urlForSanityImage(item.fullImage, { width: 2400 }),
+    bgAlt: imageAlt(item.fullImage, title)
+  };
+});
+
+const slotOffsets = [-3, -2, -1, 0, 1, 2, 3];
+
+function wrapExhibitionIndex(index: number, length: number): number {
+  return ((index % length) + length) % length;
+}
 ---
 
+
 <BaseLayout title="Exhibitions — Transmoderna">
-  <main>
-    <h1>Exhibitions</h1>
+  <script
+    slot="head"
+    is:inline
+    define:vars={{ storageKey: EXHIBITIONS_VIEW_STORAGE_KEY }}
+  >
+    try {
+      const mode = localStorage.getItem(storageKey);
+      document.documentElement.dataset.exhibitionsView =
+        mode === 'thumbnail' ? 'thumbnail' : 'full';
+    } catch (e) {
+      document.documentElement.dataset.exhibitionsView = 'full';
+    }
+  </script>
+
+  <main class="page-exhibitions" data-exhibitions-page data-exhibitions-view="full">
+    {
+      thumbnailBackgroundSrc ? (
+        <div
+          class="page-exhibitions-page-bg page-exhibitions-page-bg--thumbnail"
+          aria-hidden="true"
+        >
+          <img
+            src={thumbnailBackgroundSrc}
+            alt={thumbnailBackgroundAlt}
+            width={2400}
+            loading="eager"
+            fetchpriority="high"
+          />
+        </div>
+      ) : null
+    }
+    {
+      fullPageBackgroundSrc ? (
+        <div class="page-exhibitions-page-bg page-exhibitions-page-bg--full" aria-hidden="true">
+          <img
+            src={fullPageBackgroundSrc}
+            alt={fullPageBackgroundAlt}
+            width={2400}
+            loading="eager"
+            fetchpriority="high"
+          />
+        </div>
+      ) : null
+    }
+
     {
       exhibitions.length === 0 ? (
         <p>No exhibitions yet.</p>
       ) : (
-        <ul>
-          {
-            exhibitions.map((item) => (
-              <li>
-                <article>
-                  {item.thumbnailImage ? (
-                    <SanityImage
-                      image={item.thumbnailImage}
-                      altFallback={item.title ?? 'Exhibition'}
-                      width={600}
-                    />
-                  ) : null}
-                  <h2>{item.title}</h2>
-                  {item.year != null ? (
-                    <p>
-                      <time datetime={String(item.year)}>{item.year}</time>
-                    </p>
-                  ) : null}
-                  {item.location ? <p>{item.location}</p> : null}
-                  {item.tags && item.tags.length > 0 ? (
-                    <ul>
-                      {item.tags.map((tag) => (
-                        <li>{tag}</li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  {item.artists && item.artists.length > 0 ? (
-                    <ul>
-                      {item.artists.map((artist) => (
-                        <li>
-                          {artist.name}
-                          {artist.country ? ` (${artist.country})` : ''}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                </article>
-              </li>
-            ))
-          }
-        </ul>
+        <>
+          <div class="page-exhibitions-thumbnail" data-exhibitions-thumbnail>
+            <ul class="page-exhibitions-list">
+              {
+                exhibitions.map((item) => {
+                  const href = item.slug?.current ? `/exhibitions/${item.slug.current}` : undefined;
+                  const title = item.title ?? 'Exhibition';
+
+                  if (!href) {
+                    return (
+                      <li class="page-exhibitions-item">
+                        <article>
+                          {item.thumbnailImage ? (
+                            <SanityImage image={item.thumbnailImage} altFallback={title} width={600} />
+                          ) : null}
+                          <h2 class="page-exhibitions-item-title">{item.title}</h2>
+                        </article>
+                      </li>
+                    );
+                  }
+
+                  return (
+                    <li class="page-exhibitions-item">
+                      <article>
+                        <a class="page-exhibitions-item-link" href={href}>
+                          {item.thumbnailImage ? (
+                            <SanityImage image={item.thumbnailImage} altFallback={title} width={600} />
+                          ) : null}
+                          <h2 class="page-exhibitions-item-title">{item.title}</h2>
+                        </a>
+                      </article>
+                    </li>
+                  );
+                })
+              }
+            </ul>
+          </div>
+
+          <div
+            class="page-exhibitions-full"
+            data-exhibitions-full
+            data-exhibitions-items={JSON.stringify(fullViewItems)}
+          >
+            <p class="sr-only" data-exhibitions-live aria-live="polite" aria-atomic="true">
+              {fullViewItems[0]?.title}
+            </p>
+
+            <div class="page-exhibitions-full-bg" aria-hidden="true">
+              {
+                fullViewItems[0]?.bgSrc ? (
+                  <img
+                    class="is-active"
+                    data-exhibitions-bg-layer="0"
+                    src={fullViewItems[0].bgSrc}
+                    alt={fullViewItems[0].bgAlt}
+                    decoding="async"
+                  />
+                ) : (
+                  <img data-exhibitions-bg-layer="0" alt="" decoding="async" />
+                )
+              }
+              <img data-exhibitions-bg-layer="1" alt="" decoding="async" />
+            </div>
+
+            <div
+              class="page-exhibitions-full-scroller"
+              data-exhibitions-full-scroller
+              tabindex="0"
+            >
+              <ul class="page-exhibitions-full-list" data-exhibitions-full-list>
+                {
+                  slotOffsets.map((offset) => {
+                    const item = fullViewItems[wrapExhibitionIndex(offset, fullViewItems.length)];
+                    const isActive = offset === 0;
+
+                    return (
+                      <li
+                        class:list={['page-exhibitions-full-slide', { 'is-active': isActive }]}
+                        data-exhibitions-slot={offset}
+                      >
+                        {item?.href ? (
+                          <a class="page-exhibitions-full-slide-link" href={item.href}>
+                            <span class="page-exhibitions-full-slide-title">{item.title}</span>
+                          </a>
+                        ) : (
+                          <span class="page-exhibitions-full-slide-title">{item?.title}</span>
+                        )}
+                      </li>
+                    );
+                  })
+                }
+              </ul>
+            </div>
+          </div>
+        </>
       )
     }
   </main>
+  <div class="page-exhibitions-view-toggle" role="group" aria-label="Exhibitions view mode">
+    <button type="button" data-exhibitions-view-toggle="thumbnail" aria-pressed="false">
+    </button>
+    <button type="button" data-exhibitions-view-toggle="full" aria-pressed="true">
+    </button>
+  </div>
 </BaseLayout>

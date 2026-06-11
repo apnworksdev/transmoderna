@@ -1,0 +1,20 @@
+---
+import type { ExhibitionText } from '../../lib/sanity';
+import PlainText from '../PlainText.astro';
+
+interface Props {
+  text?: ExhibitionText;
+}
+
+const { text } = Astro.props;
+---
+
+{
+  text ? (
+    <div class="exhibition-text">
+      {text.title ? <h3 class="exhibition-text-title">{text.title}</h3> : null}
+      <PlainText text={text.content} class="exhibition-text-content" />
+      {text.footnote ? <p class="exhibition-text-footnote">{text.footnote}</p> : null}
+    </div>
+  ) : null
+}

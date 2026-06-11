@@ -1,0 +1,56 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ExhibitionBlocks from '../../components/exhibition/ExhibitionBlocks.astro';
+import { getExhibitionBySlug } from '../../lib/sanity';
+import '../../styles/pages/exhibitions.css';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+if (!slug) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
+}
+
+const exhibition = await getExhibitionBySlug(slug);
+if (!exhibition) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
+}
+
+const pageTitle = exhibition.title ? `${exhibition.title} — Transmoderna` : 'Exhibition — Transmoderna';
+const artistNames =
+  exhibition.artists?.map((artist) =>
+    artist.country ? `${artist.name} (${artist.country})` : artist.name
+  ) ?? [];
+---
+
+<BaseLayout title={pageTitle}>
+  <main class="page-exhibition">
+    <a class="page-exhibition-back" href="/exhibitions">← Exhibitions</a>
+
+    <header class="page-exhibition-header">
+      <h1>{exhibition.title}</h1>
+      <div class="page-exhibition-meta">
+        {exhibition.year != null ? (
+          <time datetime={String(exhibition.year)}>{exhibition.year}</time>
+        ) : null}
+        {exhibition.location ? <span>{exhibition.location}</span> : null}
+        {exhibition.tags && exhibition.tags.length > 0 ? (
+          <ul class="page-exhibition-meta-list" aria-label="Tags">
+            {exhibition.tags.map((tag) => (
+              <li>{tag}</li>
+            ))}
+          </ul>
+        ) : null}
+        {artistNames.length > 0 ? (
+          <ul class="page-exhibition-meta-list" aria-label="Artists">
+            {artistNames.map((name) => (
+              <li>{name}</li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+    </header>
+
+    <ExhibitionBlocks blocks={exhibition.content} title={exhibition.title ?? 'Exhibition'} />
+  </main>
+</BaseLayout>

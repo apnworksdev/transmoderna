@@ -1,0 +1,19 @@
+---
+import type { ExhibitionContentBlock } from '../../lib/sanity';
+import ExhibitionMedia from './ExhibitionMedia.astro';
+
+interface Props {
+  block: Extract<ExhibitionContentBlock, { _type: 'exhibitionFullImageBlock' }>;
+  title: string;
+}
+
+const { block, title } = Astro.props;
+---
+
+{
+  block.media ? (
+    <figure class="exhibition-full-image">
+      <ExhibitionMedia media={block.media} title={title} imageWidth={2400} />
+    </figure>
+  ) : null
+}

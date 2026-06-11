@@ -1,0 +1,20 @@
+---
+import type { ExhibitionContentBlock } from '../../lib/sanity';
+import ExhibitionColumn from './ExhibitionColumn.astro';
+
+interface Props {
+  block: Extract<ExhibitionContentBlock, { _type: 'exhibitionTwoColumnBlock' }>;
+  title: string;
+}
+
+const { block, title } = Astro.props;
+---
+
+<div class="exhibition-two-column">
+  <div class="exhibition-two-column-left">
+    <ExhibitionColumn column={block.left} title={title} />
+  </div>
+  <div class="exhibition-two-column-right">
+    <ExhibitionColumn column={block.right} title={title} />
+  </div>
+</div>

@@ -3,6 +3,7 @@ import { aboutType } from './documents/about';
 import { artistType } from './documents/artist';
 import { brandType } from './documents/brand';
 import { exhibitionType } from './documents/exhibition';
+import { exhibitionsPageType } from './documents/exhibitionsPage';
 import { homeType } from './documents/home';
 import { podcastType } from './documents/podcast';
 import { portfolioItemType } from './documents/portfolioItem';
@@ -21,6 +22,11 @@ import { contactSectionType } from './objects/contactSection';
 import { portfolioMediaType } from './objects/portfolioMedia';
 import { teamMemberType } from './objects/teamMember';
 import { vimeoVideoType } from './objects/vimeoVideo';
+import { exhibitionColumnType } from './objects/exhibitionColumn';
+import { exhibitionFullImageBlockType } from './objects/exhibitionFullImageBlock';
+import { exhibitionMediaType } from './objects/exhibitionMedia';
+import { exhibitionTextType } from './objects/exhibitionText';
+import { exhibitionTwoColumnBlockType } from './objects/exhibitionTwoColumnBlock';
 import { workMediaType } from './objects/workMedia';
 import { inventoryType } from './shopify/inventory';
 import { optionType } from './shopify/option';
@@ -31,6 +37,11 @@ import { shopifyShopType } from './shopify/shopifyShop';
 
 export const schemaTypes: SchemaTypeDefinition[] = [
   vimeoVideoType,
+  exhibitionMediaType,
+  exhibitionTextType,
+  exhibitionColumnType,
+  exhibitionFullImageBlockType,
+  exhibitionTwoColumnBlockType,
   workMediaType,
   siteMenuLinkType,
   portfolioMediaType,
@@ -45,6 +56,7 @@ export const schemaTypes: SchemaTypeDefinition[] = [
   shopType,
   workType,
   workPageType,
+  exhibitionsPageType,
   exhibitionType,
   artistType,
   portfolioItemType,

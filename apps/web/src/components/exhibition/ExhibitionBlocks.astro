@@ -1,0 +1,30 @@
+---
+import type { ExhibitionContentBlock } from '../../lib/sanity';
+import ExhibitionFullImage from './ExhibitionFullImage.astro';
+import ExhibitionTwoColumn from './ExhibitionTwoColumn.astro';
+
+interface Props {
+  blocks?: ExhibitionContentBlock[];
+  title: string;
+}
+
+const { blocks = [], title } = Astro.props;
+---
+
+{
+  blocks.length > 0 ? (
+    <div class="exhibition-blocks">
+      {
+        blocks.map((block) => {
+          if (block._type === 'exhibitionFullImageBlock') {
+            return <ExhibitionFullImage block={block} title={title} key={block._key} />;
+          }
+          if (block._type === 'exhibitionTwoColumnBlock') {
+            return <ExhibitionTwoColumn block={block} title={title} key={block._key} />;
+          }
+          return null;
+        })
+      }
+    </div>
+  ) : null
+}

@@ -1,5 +1,6 @@
 import {
   ABOUT_DOCUMENT_ID,
+  EXHIBITIONS_PAGE_DOCUMENT_ID,
   HOME_DOCUMENT_ID,
   SITE_HEADER_DOCUMENT_ID,
   WORK_PAGE_DOCUMENT_ID
@@ -77,15 +78,55 @@ export type ArtistDocument = {
   country?: string;
 };
 
+export type ExhibitionMedia = {
+  kind?: 'image' | 'video';
+  image?: SanityImageWithAlt;
+  videoUrl?: string;
+  videoSrc?: string;
+};
+
+export type ExhibitionText = {
+  title?: string;
+  content?: string;
+  footnote?: string;
+};
+
+export type ExhibitionColumn = {
+  contentType?: 'empty' | 'media' | 'text';
+  media?: ExhibitionMedia;
+  text?: ExhibitionText;
+};
+
+export type ExhibitionContentBlock =
+  | {
+      _type: 'exhibitionFullImageBlock';
+      _key: string;
+      media?: ExhibitionMedia;
+    }
+  | {
+      _type: 'exhibitionTwoColumnBlock';
+      _key: string;
+      left?: ExhibitionColumn;
+      right?: ExhibitionColumn;
+    };
+
 export type ExhibitionDocument = {
   _id: string;
   title?: string;
+  slug?: { current?: string };
   thumbnailImage?: SanityImageWithAlt;
+  fullImage?: SanityImageWithAlt;
   tags?: string[];
   location?: string;
   year?: number;
   artists?: ArtistDocument[];
-  sortOrder?: number;
+  content?: ExhibitionContentBlock[];
+};
+
+export type ExhibitionsPageDocument = {
+  thumbnailBackgroundImage?: SanityImageWithAlt;
+  fullBackgroundImage?: SanityImageWithAlt;
+  exhibitions?: ExhibitionDocument[];
 };
 
 export type PortfolioItemDocument = {
@@ -302,22 +343,164 @@ export async function getWorkPage(): Promise<WorkPageDocument | null> {
   };
 }
 
-export async function getExhibitions(): Promise<ExhibitionDocument[]> {
-  if (!client) {
-    return [];
+const exhibitionMediaProjection = `{
+  kind,
+  videoUrl,
+  image { ..., alt, asset->{ url, mimeType } }
+}`;
+
+const exhibitionListProjection = `{
+  _id,
+  title,
+  slug,
+  thumbnailImage { ..., alt, asset->{ url, mimeType } },
+  fullImage { ..., alt, asset->{ url, mimeType } },
+  tags,
+  location,
+  year,
+  "artists": artists[]->{ _id, name, country }
+}`;
+
+const exhibitionContentProjection = `content[]{
+  _type,
+  _key,
+  _type == "exhibitionFullImageBlock" => {
+    media ${exhibitionMediaProjection}
+  },
+  _type == "exhibitionTwoColumnBlock" => {
+    left {
+      contentType,
+      media ${exhibitionMediaProjection},
+      text { title, content, footnote }
+    },
+    right {
+      contentType,
+      media ${exhibitionMediaProjection},
+      text { title, content, footnote }
+    }
   }
-  return client.fetch<ExhibitionDocument[]>(
-    `*[_type == "exhibition"] | order(sortOrder asc, year desc){
+}`;
+
+async function enrichExhibitionMedia(media: ExhibitionMedia | undefined): Promise<ExhibitionMedia | undefined> {
+  if (!media?.kind || media.kind !== 'video' || !media.videoUrl?.trim()) {
+    return media;
+  }
+
+  const { resolveVimeoVideoSrc } = await import('./vimeo');
+  const videoSrc = await resolveVimeoVideoSrc(media.videoUrl);
+  return videoSrc ? { ...media, videoSrc } : media;
+}
+
+async function enrichExhibitionColumn(
+  column: ExhibitionColumn | undefined
+): Promise<ExhibitionColumn | undefined> {
+  if (!column || column.contentType !== 'media' || !column.media) {
+    return column;
+  }
+
+  return {
+    ...column,
+    media: await enrichExhibitionMedia(column.media)
+  };
+}
+
+async function enrichExhibitionContent(
+  content: ExhibitionContentBlock[] | undefined
+): Promise<ExhibitionContentBlock[] | undefined> {
+  if (!content?.length) {
+    return content;
+  }
+
+  return Promise.all(
+    content.map(async (block) => {
+      if (block._type === 'exhibitionFullImageBlock') {
+        return {
+          ...block,
+          media: await enrichExhibitionMedia(block.media)
+        };
+      }
+
+      if (block._type !== 'exhibitionTwoColumnBlock') {
+        return block;
+      }
+
+      const [left, right] = await Promise.all([
+        enrichExhibitionColumn(block.left),
+        enrichExhibitionColumn(block.right)
+      ]);
+
+      return { ...block, left, right };
+    })
+  );
+}
+
+async function enrichExhibition(exhibition: ExhibitionDocument): Promise<ExhibitionDocument> {
+  return {
+    ...exhibition,
+    content: await enrichExhibitionContent(exhibition.content)
+  };
+}
+
+export async function getExhibitionsPage(): Promise<ExhibitionsPageDocument | null> {
+  if (!client) {
+    return null;
+  }
+
+  const page = await client.fetch<ExhibitionsPageDocument | null>(
+    `*[_type == "exhibitionsPage" && _id == $id][0]{
+      thumbnailBackgroundImage { ..., alt, asset->{ url, mimeType } },
+      fullBackgroundImage { ..., alt, asset->{ url, mimeType } },
+      "exhibitions": exhibitions[]->${exhibitionListProjection}
+    }`,
+    { id: EXHIBITIONS_PAGE_DOCUMENT_ID }
+  );
+
+  if (!page) {
+    return null;
+  }
+
+  let exhibitions = (page.exhibitions ?? []).filter((item): item is ExhibitionDocument =>
+    Boolean(item?._id)
+  );
+
+  if (exhibitions.length === 0) {
+    exhibitions = await client.fetch<ExhibitionDocument[]>(
+      `*[_type == "exhibition"] | order(title asc) ${exhibitionListProjection}`
+    );
+  }
+
+  return {
+    thumbnailBackgroundImage: page.thumbnailBackgroundImage,
+    fullBackgroundImage: page.fullBackgroundImage,
+    exhibitions
+  };
+}
+
+export async function getExhibitionBySlug(slug: string): Promise<ExhibitionDocument | null> {
+  if (!client) {
+    return null;
+  }
+
+  const exhibition = await client.fetch<ExhibitionDocument | null>(
+    `*[_type == "exhibition" && slug.current == $slug][0]{
       _id,
       title,
-      thumbnailImage { ..., alt },
+      slug,
+      thumbnailImage { ..., alt, asset->{ url, mimeType } },
       tags,
       location,
       year,
       "artists": artists[]->{ _id, name, country },
-      sortOrder
-    }`
+      ${exhibitionContentProjection}
+    }`,
+    { slug }
   );
+
+  if (!exhibition) {
+    return null;
+  }
+
+  return enrichExhibition(exhibition);
 }
 
 export async function getPortfolioItems(): Promise<PortfolioItemDocument[]> {

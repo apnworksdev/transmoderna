@@ -1,0 +1,20 @@
+---
+import type { ExhibitionColumn } from '../../lib/sanity';
+import ExhibitionMedia from './ExhibitionMedia.astro';
+import ExhibitionText from './ExhibitionText.astro';
+
+interface Props {
+  column?: ExhibitionColumn;
+  title: string;
+}
+
+const { column, title } = Astro.props;
+---
+
+{
+  column?.contentType === 'media' ? (
+    <ExhibitionMedia media={column.media} title={title} />
+  ) : column?.contentType === 'text' ? (
+    <ExhibitionText text={column.text} />
+  ) : null
+}

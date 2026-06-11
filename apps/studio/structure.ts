@@ -3,6 +3,7 @@ import {
   HOME_DOCUMENT_ID,
   SHOP_DOCUMENT_ID,
   SITE_HEADER_DOCUMENT_ID,
+  EXHIBITIONS_PAGE_DOCUMENT_ID,
   WORK_PAGE_DOCUMENT_ID
 } from '@repo/shared';
 import {
@@ -68,7 +69,14 @@ export const structure: StructureResolver = (S) =>
                 .title('Work')
                 .id(WORK_PAGE_DOCUMENT_ID)
                 .icon(CaseIcon)
-                .child(S.document().schemaType('workPage').documentId(WORK_PAGE_DOCUMENT_ID))
+                .child(S.document().schemaType('workPage').documentId(WORK_PAGE_DOCUMENT_ID)),
+              S.listItem()
+                .title('Exhibitions')
+                .id(EXHIBITIONS_PAGE_DOCUMENT_ID)
+                .icon(PresentationIcon)
+                .child(
+                  S.document().schemaType('exhibitionsPage').documentId(EXHIBITIONS_PAGE_DOCUMENT_ID)
+                )
             ])
         ),
       S.divider(),

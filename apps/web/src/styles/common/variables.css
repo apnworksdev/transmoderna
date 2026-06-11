@@ -2,6 +2,7 @@
   --background-color: #000;
   --foreground-color: #fff;
   --gray-color: #8a8a8a;
+  --blue-color: #291d8b;
 
   --selection-background-color: transparent;
   --selection-foreground-color: var(--gray-color);

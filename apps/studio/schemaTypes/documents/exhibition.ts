@@ -14,11 +14,19 @@ export const exhibitionType = defineType({
       validation: (Rule) => Rule.required()
     }),
     defineField({
-      name: 'fullImage',
-      title: 'Full image',
+      name: 'slug',
+      title: 'Slug',
+      type: 'slug',
+      options: { source: 'title', maxLength: 96 },
+      validation: (Rule) => Rule.required()
+    }),
+    defineField({
+      name: 'thumbnailImage',
+      title: 'Thumbnail image',
       type: 'image',
-      description: 'High-resolution image (not shown on the public listing page yet).',
+      description: 'Shown on the exhibitions listing page in thumbnail view.',
       options: { hotspot: true },
+      validation: (Rule) => Rule.required(),
       fields: [
         defineField({
           name: 'alt',
@@ -28,10 +36,10 @@ export const exhibitionType = defineType({
       ]
     }),
     defineField({
-      name: 'thumbnailImage',
-      title: 'Thumbnail image',
+      name: 'fullImage',
+      title: 'Full image',
       type: 'image',
-      description: 'Shown on the exhibitions listing page.',
+      description: 'Shown on the exhibitions listing page in full image view.',
       options: { hotspot: true },
       validation: (Rule) => Rule.required(),
       fields: [
@@ -67,17 +75,18 @@ export const exhibitionType = defineType({
       of: [{ type: 'reference', to: [{ type: 'artist' }] }]
     }),
     defineField({
-      name: 'sortOrder',
-      title: 'Sort order',
-      type: 'number',
-      initialValue: 0
+      name: 'content',
+      title: 'Page content',
+      type: 'array',
+      of: [{ type: 'exhibitionFullImageBlock' }, { type: 'exhibitionTwoColumnBlock' }],
+      description: 'Blocks shown on the exhibition single page.'
     })
   ],
   orderings: [
     {
-      title: 'Sort order',
-      name: 'sortOrderAsc',
-      by: [{ field: 'sortOrder', direction: 'asc' }]
+      title: 'Year, newest',
+      name: 'yearDesc',
+      by: [{ field: 'year', direction: 'desc' }]
     }
   ],
   preview: {
