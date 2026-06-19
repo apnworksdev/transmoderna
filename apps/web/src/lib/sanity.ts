@@ -126,6 +126,7 @@ export type ExhibitionDocument = {
 export type ExhibitionsPageDocument = {
   thumbnailBackgroundImage?: SanityImageWithAlt;
   fullBackgroundImage?: SanityImageWithAlt;
+  singleBackgroundImage?: SanityImageWithAlt;
   exhibitions?: ExhibitionDocument[];
 };
 
@@ -450,6 +451,7 @@ export async function getExhibitionsPage(): Promise<ExhibitionsPageDocument | nu
     `*[_type == "exhibitionsPage" && _id == $id][0]{
       thumbnailBackgroundImage { ..., alt, asset->{ url, mimeType } },
       fullBackgroundImage { ..., alt, asset->{ url, mimeType } },
+      singleBackgroundImage { ..., alt, asset->{ url, mimeType } },
       "exhibitions": exhibitions[]->${exhibitionListProjection}
     }`,
     { id: EXHIBITIONS_PAGE_DOCUMENT_ID }
@@ -472,8 +474,24 @@ export async function getExhibitionsPage(): Promise<ExhibitionsPageDocument | nu
   return {
     thumbnailBackgroundImage: page.thumbnailBackgroundImage,
     fullBackgroundImage: page.fullBackgroundImage,
+    singleBackgroundImage: page.singleBackgroundImage,
     exhibitions
   };
+}
+
+export async function getExhibitionsSingleBackgroundImage(): Promise<SanityImageWithAlt | null> {
+  if (!client) {
+    return null;
+  }
+
+  return client.fetch<SanityImageWithAlt | null>(
+    `*[_type == "exhibitionsPage" && _id == $id][0].singleBackgroundImage {
+      ...,
+      alt,
+      asset->{ url, mimeType }
+    }`,
+    { id: EXHIBITIONS_PAGE_DOCUMENT_ID }
+  );
 }
 
 export async function getExhibitionBySlug(slug: string): Promise<ExhibitionDocument | null> {

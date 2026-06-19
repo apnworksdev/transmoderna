@@ -5,6 +5,7 @@ import {
 import {
   createImagePreloader,
   createKeyNavigation,
+  createSlideClickNavigation,
   createTouchNavigation,
   createWheelNavigation,
   throttleRAF,
@@ -73,7 +74,11 @@ export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCl
 
     if (link) {
       if (item.href) {
-        link.href = item.href;
+        if (isActive) {
+          link.href = item.href;
+        } else {
+          link.removeAttribute('href');
+        }
         link.hidden = false;
       } else {
         link.removeAttribute('href');
@@ -143,6 +148,13 @@ export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCl
   const wheel = createWheelNavigation(navigation);
   const touch = createTouchNavigation(navigation);
   const keys = createKeyNavigation(navigation);
+  const slideClick = createSlideClickNavigation({
+    ...navigation,
+    slotOffsetAttribute: 'data-exhibitions-slot',
+    consumeSuppressedClick: touch.consumeSuppressedClick,
+    getSlots: () => slots,
+    nearestAxis: 'y'
+  });
 
   const onResize = throttleRAF(() => {
     fillSlots();
@@ -151,6 +163,7 @@ export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCl
   scroller.addEventListener('wheel', wheel.onWheel, { passive: false });
   scroller.addEventListener('touchstart', touch.onTouchStart, { passive: true });
   scroller.addEventListener('touchend', touch.onTouchEnd, { passive: true });
+  scroller.addEventListener('click', slideClick.onClick);
   window.addEventListener('resize', onResize);
   scroller.addEventListener('keydown', keys.onKeyDown);
 
@@ -168,6 +181,7 @@ export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCl
     scroller.removeEventListener('wheel', wheel.onWheel);
     scroller.removeEventListener('touchstart', touch.onTouchStart);
     scroller.removeEventListener('touchend', touch.onTouchEnd);
+    scroller.removeEventListener('click', slideClick.onClick);
     window.removeEventListener('resize', onResize);
     scroller.removeEventListener('keydown', keys.onKeyDown);
     wheel.destroy();

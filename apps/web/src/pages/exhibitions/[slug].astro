@@ -1,56 +1,169 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import ExhibitionBlocks from '../../components/exhibition/ExhibitionBlocks.astro';
-import { getExhibitionBySlug } from '../../lib/sanity';
-import '../../styles/pages/exhibitions.css';
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import SanityImage from "../../components/SanityImage.astro";
+import ExhibitionBlocks from "../../components/exhibition/ExhibitionBlocks.astro";
+import {
+  getExhibitionBySlug,
+  getExhibitionsSingleBackgroundImage,
+  getSiteHeader,
+  imageAlt,
+  urlForSanityImage,
+} from "../../lib/sanity";
+import "../../styles/pages/exhibitions.css";
 
 export const prerender = false;
 
 const { slug } = Astro.params;
 if (!slug) {
-  return new Response(null, { status: 404, statusText: 'Not Found' });
+  return new Response(null, { status: 404, statusText: "Not Found" });
 }
 
-const exhibition = await getExhibitionBySlug(slug);
+const [exhibition, siteHeader, singleBackgroundImage] = await Promise.all([
+  getExhibitionBySlug(slug),
+  getSiteHeader(),
+  getExhibitionsSingleBackgroundImage(),
+]);
+
 if (!exhibition) {
-  return new Response(null, { status: 404, statusText: 'Not Found' });
+  return new Response(null, { status: 404, statusText: "Not Found" });
 }
 
-const pageTitle = exhibition.title ? `${exhibition.title} — Transmoderna` : 'Exhibition — Transmoderna';
-const artistNames =
-  exhibition.artists?.map((artist) =>
-    artist.country ? `${artist.name} (${artist.country})` : artist.name
-  ) ?? [];
+const siteLogo = siteHeader?.logo;
+const singleBackgroundSrc = urlForSanityImage(singleBackgroundImage, {
+  width: 2400,
+});
+const singleBackgroundAlt = imageAlt(
+  singleBackgroundImage,
+  "Exhibition page background",
+);
+
+const pageTitle = exhibition.title
+  ? `${exhibition.title} — Transmoderna`
+  : "Exhibition — Transmoderna";
+const exhibitionTags = exhibition.tags ?? [];
+const exhibitionArtists = exhibition.artists ?? [];
+const hasMetaTags = exhibitionTags.length > 0;
+const hasMetaDetails = Boolean(exhibition.location) || exhibition.year != null;
+const hasMetaArtists = exhibitionArtists.length > 0;
+const hasExhibitionMeta = hasMetaTags || hasMetaDetails || hasMetaArtists;
 ---
 
-<BaseLayout title={pageTitle}>
+<BaseLayout title={pageTitle} hideSiteHeader>
   <main class="page-exhibition">
-    <a class="page-exhibition-back" href="/exhibitions">← Exhibitions</a>
+    {
+      singleBackgroundSrc ? (
+        <div class="page-exhibition-hero-bg" aria-hidden="true">
+          <img
+            src={singleBackgroundSrc}
+            alt={singleBackgroundAlt}
+            width={2400}
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+          />
+        </div>
+      ) : null
+    }
 
-    <header class="page-exhibition-header">
-      <h1>{exhibition.title}</h1>
-      <div class="page-exhibition-meta">
-        {exhibition.year != null ? (
-          <time datetime={String(exhibition.year)}>{exhibition.year}</time>
-        ) : null}
-        {exhibition.location ? <span>{exhibition.location}</span> : null}
-        {exhibition.tags && exhibition.tags.length > 0 ? (
-          <ul class="page-exhibition-meta-list" aria-label="Tags">
-            {exhibition.tags.map((tag) => (
-              <li>{tag}</li>
-            ))}
-          </ul>
-        ) : null}
-        {artistNames.length > 0 ? (
-          <ul class="page-exhibition-meta-list" aria-label="Artists">
-            {artistNames.map((name) => (
-              <li>{name}</li>
-            ))}
-          </ul>
-        ) : null}
+    <div class="page-exhibition-gradient" aria-hidden="true"></div>
+
+    <div class="page-exhibition-inner">
+      <div class="page-exhibition-toolbar">
+        <div class="page-exhibition-title-wrap">
+          <h1 class="page-exhibition-title">{exhibition.title}</h1>
+        </div>
+
+        <a
+          class="page-exhibition-logo site-header-logo"
+          href="/"
+          aria-label="Transmoderna home"
+        >
+          {
+            siteLogo ? (
+              <SanityImage
+                image={siteLogo}
+                altFallback="Transmoderna"
+                width={80}
+                loading="eager"
+                fetchpriority="high"
+              />
+            ) : (
+              <span>Transmoderna</span>
+            )
+          }
+        </a>
+
+        <a class="page-exhibition-close site-header-pill" href="/exhibitions"
+          >Close</a
+        >
       </div>
-    </header>
 
-    <ExhibitionBlocks blocks={exhibition.content} title={exhibition.title ?? 'Exhibition'} />
+      {
+        hasExhibitionMeta ? (
+          <div class="page-exhibition-meta">
+            {hasMetaTags || hasMetaDetails ? (
+              <div class="page-exhibition-meta-inner">
+                {hasMetaTags ? (
+                  <div class="page-exhibition-meta-tags">
+                    {exhibitionTags.map((tag) => (
+                      <p class="page-exhibition-meta-tags-item">{tag}</p>
+                    ))}
+                  </div>
+                ) : null}
+
+                {hasMetaDetails ? (
+                  <div class="page-exhibition-meta-details">
+                    {exhibition.location ? (
+                      <div class="page-exhibition-meta-field">
+                        <span class="page-exhibition-meta-label">Location</span>
+                        <span class="page-exhibition-meta-value">
+                          {exhibition.location}
+                        </span>
+                      </div>
+                    ) : null}
+                    {exhibition.year != null ? (
+                      <div class="page-exhibition-meta-field page-exhibition-meta-field--year">
+                        <span class="page-exhibition-meta-label">Year</span>
+                        <time
+                          class="page-exhibition-meta-value"
+                          datetime={String(exhibition.year)}
+                        >
+                          {exhibition.year}
+                        </time>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            {hasMetaArtists ? (
+              <div class="page-exhibition-meta-artists">
+                <span class="page-exhibition-meta-label">Artists</span>
+                <ul class="page-exhibition-meta-artists-list">
+                  {exhibitionArtists.map((artist) => (
+                    <li class="page-exhibition-meta-artist">
+                      {artist.country ? (
+                        <sup class="page-exhibition-meta-artist-country">
+                          ({artist.country})
+                        </sup>
+                      ) : null}
+                      <span class="page-exhibition-meta-artist-name">
+                        {artist.name}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        ) : null
+      }
+
+      <ExhibitionBlocks
+        blocks={exhibition.content}
+        title={exhibition.title ?? "Exhibition"}
+      />
+    </div>
   </main>
 </BaseLayout>

@@ -5,6 +5,7 @@ import {
 import {
   createImagePreloader,
   createKeyNavigation,
+  createSlideClickNavigation,
   createTouchNavigation,
   createWheelNavigation,
   getDirection,
@@ -94,7 +95,11 @@ export function initExhibitionsThumbnailSwiper(root: ParentNode = document): Swi
 
     if (link) {
       if (item.href) {
-        link.href = item.href;
+        if (isActive) {
+          link.href = item.href;
+        } else {
+          link.removeAttribute('href');
+        }
         link.hidden = false;
       } else {
         link.removeAttribute('href');
@@ -187,17 +192,19 @@ export function initExhibitionsThumbnailSwiper(root: ParentNode = document): Swi
       return;
     }
 
-    const direction = getDirection(activeIndex, nextIndex, total);
-    if (direction === 0) {
-      return;
-    }
-
     isAnimating = true;
     preloadAround(nextIndex);
 
-    await runSlideAnimation(direction > 0 ? 'next' : 'prev');
-    activeIndex = nextIndex;
-    snapAfterAnimation();
+    while (activeIndex !== nextIndex) {
+      const direction = getDirection(activeIndex, nextIndex, total);
+      if (direction === 0) {
+        break;
+      }
+
+      await runSlideAnimation(direction > 0 ? 'next' : 'prev');
+      activeIndex = wrapIndex(activeIndex + direction, total);
+      snapAfterAnimation();
+    }
 
     isAnimating = false;
   };
@@ -220,6 +227,13 @@ export function initExhibitionsThumbnailSwiper(root: ParentNode = document): Swi
   const wheel = createWheelNavigation(navigation);
   const touch = createTouchNavigation(navigation);
   const keys = createKeyNavigation(navigation);
+  const slideClick = createSlideClickNavigation({
+    ...navigation,
+    slotOffsetAttribute: 'data-exhibitions-thumb-slot',
+    consumeSuppressedClick: touch.consumeSuppressedClick,
+    getSlots: () => slots,
+    nearestAxis: 'x'
+  });
 
   const onResize = throttleRAF(() => {
     if (!isAnimating) {
@@ -230,6 +244,7 @@ export function initExhibitionsThumbnailSwiper(root: ParentNode = document): Swi
   scroller.addEventListener('wheel', wheel.onWheel, { passive: false });
   scroller.addEventListener('touchstart', touch.onTouchStart, { passive: true });
   scroller.addEventListener('touchend', touch.onTouchEnd, { passive: true });
+  scroller.addEventListener('click', slideClick.onClick);
   window.addEventListener('resize', onResize);
   scroller.addEventListener('keydown', keys.onKeyDown);
 
@@ -240,6 +255,7 @@ export function initExhibitionsThumbnailSwiper(root: ParentNode = document): Swi
     scroller.removeEventListener('wheel', wheel.onWheel);
     scroller.removeEventListener('touchstart', touch.onTouchStart);
     scroller.removeEventListener('touchend', touch.onTouchEnd);
+    scroller.removeEventListener('click', slideClick.onClick);
     window.removeEventListener('resize', onResize);
     scroller.removeEventListener('keydown', keys.onKeyDown);
     wheel.destroy();

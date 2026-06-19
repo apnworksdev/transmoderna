@@ -7,9 +7,11 @@ import {
   HOME_INTRO_SESSION_VALUE,
   SITE_MENU_FALLBACK_LINKS
 } from '@repo/shared';
+import { ClientRouter, fade } from 'astro:transitions';
 import '../styles/index.css';
 import '../styles/components/fixed-footer.css';
 import '../styles/components/nav.css';
+import '../styles/components/page-transitions.css';
 
 export type FixedFooterSize = 'big' | 'small' | 'hidden';
 
@@ -17,6 +19,8 @@ interface Props {
   title?: string;
   /** Index: full-screen home with intro sequence. */
   variant?: 'default' | 'index';
+  /** Hide the global site header (e.g. exhibition detail). */
+  hideSiteHeader?: boolean;
   /** Home footer logo — pass from index to avoid a duplicate Sanity fetch. */
   footerLogo?: SanityImageWithAlt | null;
   /** Fixed bottom bar height. Use the `fixedFooter` slot for its content. */
@@ -26,6 +30,7 @@ interface Props {
 const {
   title = 'Transmoderna',
   variant = 'default',
+  hideSiteHeader = false,
   footerLogo: footerLogoProp,
   fixedFooter = 'hidden'
 } = Astro.props;
@@ -59,6 +64,7 @@ if (isIndex) {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
+    <ClientRouter fallback="animate" />
     <slot name="head" />
     {
       isIndex ? (
@@ -80,18 +86,24 @@ if (isIndex) {
     }
   </head>
   <body
+    transition:animate={fade({ duration: '600ms' })}
     class:list={[
       { 'page-index': isIndex },
+      { 'page-exhibition-detail': hideSiteHeader },
       fixedFooter === 'small' ? 'fixed-footer-small' : null,
       fixedFooter === 'big' ? 'fixed-footer-big' : null
     ]}
   >
-    <SiteHeader
-      logo={siteHeader?.logo}
-      menuLinks={menuLinks}
-      footerLogo={footerLogo}
-      deferChromeReveal={isIndex}
-    />
+    {
+      hideSiteHeader ? null : (
+        <SiteHeader
+          logo={siteHeader?.logo}
+          menuLinks={menuLinks}
+          footerLogo={footerLogo}
+          deferChromeReveal={isIndex}
+        />
+      )
+    }
 
     <slot />
 

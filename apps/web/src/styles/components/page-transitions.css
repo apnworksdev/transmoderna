@@ -1,0 +1,12 @@
+@media (prefers-reduced-motion: no-preference) {
+  html.is-page-navigating body {
+    opacity: 0.35;
+    transition: opacity var(--duration-fast) var(--ease);
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: var(--duration-base);
+    animation-timing-function: var(--ease);
+  }
+}

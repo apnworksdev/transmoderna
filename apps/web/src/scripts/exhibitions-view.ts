@@ -135,6 +135,12 @@ async function setViewMode(
   isViewTransitioning = false;
 }
 
+export function destroyExhibitionsView(): void {
+  destroySwiper();
+  currentViewMode = null;
+  isViewTransitioning = false;
+}
+
 export function initExhibitionsView(root: ParentNode = document): void {
   const page = root.querySelector<HTMLElement>('[data-exhibitions-page]');
   if (!page || initializedPages.has(page)) {

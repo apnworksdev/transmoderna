@@ -2,10 +2,16 @@ function initMuteToggles(root: ParentNode): void {
   const toggles = root.querySelectorAll<HTMLButtonElement>('[data-html-video-mute-toggle]');
 
   for (const toggle of toggles) {
+    if (toggle.dataset.muteToggleInit === 'true') {
+      continue;
+    }
+
     const video = toggle.closest('.html-video-wrap')?.querySelector<HTMLVideoElement>('[data-autoplay-video]');
     if (!video) {
       continue;
     }
+
+    toggle.dataset.muteToggleInit = 'true';
 
     const syncToggle = () => {
       const muted = video.muted;

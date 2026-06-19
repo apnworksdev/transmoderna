@@ -160,8 +160,10 @@ export function createTouchNavigation({
 }: NavigationControllerOptions) {
   let touchStartX = 0;
   let touchStartY = 0;
+  let suppressClick = false;
 
   const onTouchStart = (event: TouchEvent) => {
+    suppressClick = false;
     if (isBlocked?.()) {
       return;
     }
@@ -183,6 +185,7 @@ export function createTouchNavigation({
       if (Math.abs(deltaX) < SWIPER_TOUCH_THRESHOLD) {
         return;
       }
+      suppressClick = true;
       if (deltaX > 0) {
         goTo(getActiveIndex() + 1);
       } else {
@@ -195,6 +198,7 @@ export function createTouchNavigation({
       return;
     }
 
+    suppressClick = true;
     if (deltaY > 0) {
       goTo(getActiveIndex() + 1);
     } else {
@@ -202,7 +206,15 @@ export function createTouchNavigation({
     }
   };
 
-  return { onTouchStart, onTouchEnd };
+  const consumeSuppressedClick = () => {
+    if (!suppressClick) {
+      return false;
+    }
+    suppressClick = false;
+    return true;
+  };
+
+  return { onTouchStart, onTouchEnd, consumeSuppressedClick };
 }
 
 type KeyNavigationOptions = NavigationControllerOptions & {
@@ -236,4 +248,95 @@ export function createKeyNavigation({
   };
 
   return { onKeyDown };
+}
+
+type SlideClickNavigationOptions = NavigationControllerOptions & {
+  slotOffsetAttribute: string;
+  ignoredSlotOffsets?: string[];
+  consumeSuppressedClick?: () => boolean;
+  getSlots: () => HTMLElement[];
+  nearestAxis: 'x' | 'y';
+};
+
+export function findNearestSlideByAxis(
+  clientX: number,
+  clientY: number,
+  slots: HTMLElement[],
+  axis: 'x' | 'y'
+): HTMLElement | null {
+  let nearest: HTMLElement | null = null;
+  let nearestDistance = Infinity;
+
+  for (const slot of slots) {
+    if (slot.hidden) {
+      continue;
+    }
+
+    const rect = slot.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) {
+      continue;
+    }
+
+    const center = axis === 'x' ? rect.left + rect.width / 2 : rect.top + rect.height / 2;
+    const pointer = axis === 'x' ? clientX : clientY;
+    const distance = Math.abs(pointer - center);
+
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearest = slot;
+    }
+  }
+
+  return nearest;
+}
+
+export function createSlideClickNavigation({
+  total,
+  slotOffsetAttribute,
+  ignoredSlotOffsets = ['enter-right', 'enter-left'],
+  getActiveIndex,
+  goTo,
+  isBlocked,
+  consumeSuppressedClick,
+  getSlots,
+  nearestAxis
+}: SlideClickNavigationOptions) {
+  const onClick = (event: MouseEvent) => {
+    if (consumeSuppressedClick?.()) {
+      return;
+    }
+
+    if (total < 2 || isBlocked?.()) {
+      return;
+    }
+
+    const slots = getSlots().filter((slot) => {
+      const rawOffset = slot.getAttribute(slotOffsetAttribute);
+      return rawOffset && !ignoredSlotOffsets.includes(rawOffset);
+    });
+
+    const nearest = findNearestSlideByAxis(event.clientX, event.clientY, slots, nearestAxis);
+    if (!(nearest instanceof HTMLElement)) {
+      return;
+    }
+
+    if (nearest.classList.contains('is-active')) {
+      return;
+    }
+
+    const rawOffset = nearest.getAttribute(slotOffsetAttribute);
+    if (!rawOffset) {
+      return;
+    }
+
+    const offset = Number.parseInt(rawOffset, 10);
+    if (!Number.isFinite(offset)) {
+      return;
+    }
+
+    event.preventDefault();
+    goTo(wrapIndex(getActiveIndex() + offset, total));
+  };
+
+  return { onClick };
 }

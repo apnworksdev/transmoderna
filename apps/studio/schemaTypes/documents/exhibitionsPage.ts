@@ -36,6 +36,20 @@ export const exhibitionsPageType = defineType({
       ]
     }),
     defineField({
+      name: 'singleBackgroundImage',
+      title: 'Single page background',
+      type: 'image',
+      description: 'Background image for exhibition single pages. Covers the first 100dvh.',
+      options: { hotspot: true },
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Alt text',
+          type: 'string'
+        })
+      ]
+    }),
+    defineField({
       name: 'exhibitions',
       title: 'Exhibitions',
       type: 'array',
