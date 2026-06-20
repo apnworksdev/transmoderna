@@ -14,6 +14,13 @@ export const podcastType = defineType({
       validation: (Rule) => Rule.required()
     }),
     defineField({
+      name: 'slug',
+      title: 'Slug',
+      type: 'slug',
+      options: { source: 'title', maxLength: 96 },
+      validation: (Rule) => Rule.required()
+    }),
+    defineField({
       name: 'podcaster',
       title: 'Podcaster',
       type: 'string',
@@ -26,9 +33,16 @@ export const podcastType = defineType({
       validation: (Rule) => Rule.required().integer().positive()
     }),
     defineField({
-      name: 'url',
-      title: 'Listen URL',
-      type: 'url',
+      name: 'publishDate',
+      title: 'Publish date',
+      type: 'date',
+      validation: (Rule) => Rule.required()
+    }),
+    defineField({
+      name: 'audioFile',
+      title: 'Audio file',
+      type: 'file',
+      options: { accept: 'audio/*' },
       validation: (Rule) => Rule.required()
     }),
     defineField({

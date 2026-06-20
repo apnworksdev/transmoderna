@@ -1,0 +1,27 @@
+---
+/** Order summary shell — values filled by shop-cart.ts */
+---
+
+<aside class="page-shop-cart-summary" data-cart-summary aria-label="Order summary">
+  <div class="page-shop-cart-summary-row">
+    <span class="page-shop-cart-summary-label">Subtotal</span>
+    <span class="page-shop-cart-summary-value" data-cart-subtotal>—</span>
+  </div>
+  <div class="page-shop-cart-summary-row">
+    <span class="page-shop-cart-summary-label">Shipping</span>
+    <span class="page-shop-cart-summary-value page-shop-cart-summary-value--muted">
+      Calculated at checkout
+    </span>
+  </div>
+  <a
+    class="page-shop-cart-summary-row page-shop-cart-summary-row--total"
+    href="#"
+    data-cart-checkout
+    hidden
+  >
+    <span class="page-shop-cart-summary-label">Total</span>
+    <span class="page-shop-cart-summary-value page-shop-cart-summary-value--checkout">
+      Calculated at checkout
+    </span>
+  </a>
+</aside>

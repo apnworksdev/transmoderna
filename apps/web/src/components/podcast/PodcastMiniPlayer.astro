@@ -1,0 +1,27 @@
+---
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<div class="podcast-mini-player" data-podcast-mini>
+  <div class="podcast-mini-player__content">
+    <span class="podcast-mini-player__title">{title}</span>
+    <span class="podcast-mini-player__elapsed" data-podcast-mini-elapsed>00:00:00</span>
+
+    <button
+      type="button"
+      class="podcast-mini-player__control"
+      data-podcast-mini-play-toggle
+      aria-label="Pause podcast"
+    >
+      ||
+    </button>
+  </div>
+
+  <span class="podcast-mini-player__progress-track">
+    <span class="podcast-mini-player__progress-fill" data-podcast-mini-progress-fill />
+  </span>
+</div>

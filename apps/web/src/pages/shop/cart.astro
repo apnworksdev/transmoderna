@@ -1,0 +1,38 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShopBottomBar from '../../components/shop/ShopBottomBar.astro';
+import ShopCartSummary from '../../components/shop/ShopCartSummary.astro';
+import '../../styles/pages/shop.css';
+
+const shopifyDomain = import.meta.env.PUBLIC_SHOPIFY_DOMAIN ?? '';
+const storefrontToken = import.meta.env.PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN ?? '';
+const marketCountry = import.meta.env.PUBLIC_SHOPIFY_MARKET_COUNTRY ?? '';
+---
+
+<BaseLayout title="Cart — Transmoderna">
+  <main
+    class="page-shop page-shop-cart"
+    data-shop-root
+    data-shop-page="cart"
+    data-shopify-domain={shopifyDomain}
+    data-storefront-token={storefrontToken}
+    data-market-country={marketCountry}
+  >
+    <div class="page-shop-cart-bg" aria-hidden="true">
+      <img alt="" data-cart-bg-image />
+    </div>
+
+    <div class="page-shop-cart-layout" data-cart-layout hidden>
+      <ShopCartSummary />
+      <div class="page-shop-cart-lines" data-cart-lines></div>
+    </div>
+
+    <p class="page-shop-cart-empty" data-cart-empty>
+      Your cart is empty. <a href="/shop">Continue shopping</a>.
+    </p>
+
+    <a class="page-shop-shipping-link site-header-pill" href="/shop/cart">Shipping</a>
+
+    <ShopBottomBar />
+  </main>
+</BaseLayout>

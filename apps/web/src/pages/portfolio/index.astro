@@ -1,30 +1,159 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import PortfolioMedia from '../../components/PortfolioMedia.astro';
-import { getPortfolioItems } from '../../lib/sanity';
+import { getPortfolioPage, imageAlt, urlForSanityImage } from '../../lib/sanity';
+import '../../styles/pages/portfolio.css';
 
-const items = await getPortfolioItems();
+const portfolioPage = await getPortfolioPage();
+const portfolioItems = portfolioPage?.portfolioItems ?? [];
+const backgroundSrc = urlForSanityImage(portfolioPage?.backgroundImage, { width: 2400 });
+const backgroundAlt = imageAlt(portfolioPage?.backgroundImage, 'Portfolio background');
+
+const carouselItems = portfolioItems.map((item) => {
+  const title = item.title ?? 'Portfolio item';
+  const subtitle = item.subtitle?.trim() || undefined;
+  return {
+    title,
+    subtitle,
+    year: item.year,
+    href: item.slug?.current ? `/portfolio/${item.slug.current}` : null,
+    thumbSrc: urlForSanityImage(item.thumbnailImage, { width: 1400 }),
+    thumbAlt: imageAlt(item.thumbnailImage, title)
+  };
+});
+
+const slotOffsets = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
+
+function wrapPortfolioIndex(index: number, length: number): number {
+  return ((index % length) + length) % length;
+}
+
+function formatInitialLabel(item: (typeof carouselItems)[number]): string {
+  if (item.subtitle) {
+    return `${item.title}, ${item.subtitle}`;
+  }
+  return item.title;
+}
 ---
 
 <BaseLayout title="Portfolio — Transmoderna">
-  <main>
-    <h1>Portfolio</h1>
+  <main class="page-portfolio" data-portfolio-page>
     {
-      items.length === 0 ? (
-        <p>No portfolio items yet.</p>
+      backgroundSrc ? (
+        <div class="page-portfolio-bg" aria-hidden="true">
+          <img
+            src={backgroundSrc}
+            alt={backgroundAlt}
+            width={2400}
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+          />
+        </div>
+      ) : null
+    }
+
+    {
+      carouselItems.length === 0 ? (
+        <p class="page-portfolio-empty">No portfolio items yet.</p>
       ) : (
-        <ul>
-          {
-            items.map((item) => (
-              <li>
-                <article>
-                  <h2>{item.title}</h2>
-                  <PortfolioMedia media={item.media} title={item.title ?? 'Portfolio item'} />
-                </article>
-              </li>
-            ))
-          }
-        </ul>
+        <div
+          class="page-portfolio-swiper"
+          data-portfolio-swiper
+          data-portfolio-items={JSON.stringify(carouselItems)}
+        >
+          <p class="sr-only" data-portfolio-live aria-live="polite" aria-atomic="true">
+            {carouselItems[0]?.title}
+          </p>
+
+          <div class="page-portfolio-scroller" data-portfolio-scroller tabindex="0">
+            <ul class="page-portfolio-track" data-portfolio-track>
+              {
+                slotOffsets.map((offset) => {
+                  const item = carouselItems[wrapPortfolioIndex(offset, carouselItems.length)];
+                  const isActive = offset === 0;
+                  const label = item ? formatInitialLabel(item) : '';
+
+                  return (
+                    <li
+                      class:list={['page-portfolio-slide', { 'is-active': isActive }]}
+                      data-portfolio-slot={offset}
+                    >
+                      <a
+                        class="page-portfolio-slide-link"
+                        href={isActive && item?.href ? item.href : undefined}
+                      >
+                        <figure class="page-portfolio-slide-figure">
+                          {
+                            item?.thumbSrc ? (
+                              <img
+                                class="page-portfolio-slide-image"
+                                src={item.thumbSrc}
+                                alt={item.thumbAlt}
+                                width={1400}
+                                loading={isActive ? 'eager' : 'lazy'}
+                                decoding="async"
+                              />
+                            ) : null
+                          }
+                          <figcaption class="page-portfolio-slide-overlay">
+                            <span class="page-portfolio-slide-label">{label}</span>
+                            {
+                              item?.year != null ? (
+                                <span class="page-portfolio-slide-year">{item.year}</span>
+                              ) : (
+                                <span class="page-portfolio-slide-year" hidden />
+                              )
+                            }
+                          </figcaption>
+                        </figure>
+                      </a>
+                    </li>
+                  );
+                })
+              }
+              {
+                ['enter-right', 'enter-right-2', 'enter-right-3', 'enter-right-4'].map(
+                  (enterSlot) => (
+                    <li
+                      class="page-portfolio-slide page-portfolio-slide--enter"
+                      data-portfolio-slot={enterSlot}
+                      hidden
+                      aria-hidden="true"
+                    >
+                      <figure class="page-portfolio-slide-figure">
+                        <img class="page-portfolio-slide-image" alt="" decoding="async" />
+                        <figcaption class="page-portfolio-slide-overlay">
+                          <span class="page-portfolio-slide-label" />
+                          <span class="page-portfolio-slide-year" hidden />
+                        </figcaption>
+                      </figure>
+                    </li>
+                  )
+                )
+              }
+              {
+                ['enter-left', 'enter-left-2', 'enter-left-3', 'enter-left-4'].map(
+                  (enterSlot) => (
+                    <li
+                      class="page-portfolio-slide page-portfolio-slide--enter"
+                      data-portfolio-slot={enterSlot}
+                      hidden
+                      aria-hidden="true"
+                    >
+                      <figure class="page-portfolio-slide-figure">
+                        <img class="page-portfolio-slide-image" alt="" decoding="async" />
+                        <figcaption class="page-portfolio-slide-overlay">
+                          <span class="page-portfolio-slide-label" />
+                          <span class="page-portfolio-slide-year" hidden />
+                        </figcaption>
+                      </figure>
+                    </li>
+                  )
+                )
+              }
+            </ul>
+          </div>
+        </div>
       )
     }
   </main>

@@ -14,7 +14,8 @@ export const connectLinkType = defineType({
     defineField({
       name: 'url',
       title: 'URL',
-      type: 'url',
+      type: 'string',
+      description: 'Web URL, or mailto:/tel: link.',
       validation: (Rule) => Rule.required()
     })
   ],

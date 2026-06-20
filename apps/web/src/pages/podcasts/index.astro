@@ -1,36 +1,35 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getPodcasts } from '../../lib/sanity';
+import PodcastPlayerBar from '../../components/podcast/PodcastPlayerBar.astro';
+import { getPodcastsPage } from '../../lib/sanity';
+import '../../styles/pages/podcasts.css';
 
-const podcasts = await getPodcasts();
+const podcastsPage = await getPodcastsPage();
+const podcasts = podcastsPage?.podcasts ?? [];
 ---
 
 <BaseLayout title="Podcasts — Transmoderna">
-  <main>
-    <h1>Podcasts</h1>
-    {
-      podcasts.length === 0 ? (
-        <p>No podcasts yet.</p>
-      ) : (
-        <ul>
-          {
-            podcasts.map((item) => (
-              <li>
-                <article>
-                  <h2>{item.title}</h2>
-                  {item.podcaster ? <p>{item.podcaster}</p> : null}
-                  {item.number != null ? <p>{item.number}</p> : null}
-                  {item.url ? (
-                    <p>
-                      <a href={item.url}>Listen</a>
-                    </p>
-                  ) : null}
-                </article>
-              </li>
-            ))
-          }
-        </ul>
-      )
-    }
+  <main class="page-podcasts">
+    <div class="page-podcasts-inner" data-podcast-root>
+      <audio data-podcast-audio preload="none"></audio>
+
+      {
+        podcasts.length === 0 ? (
+          <p class="page-podcasts-empty">No podcasts yet.</p>
+        ) : (
+          <ul class="page-podcasts-list">
+            {
+              podcasts.map((podcast) => (
+                <li class="page-podcasts-item">
+                  <PodcastPlayerBar podcast={podcast} variant="index" />
+                </li>
+              ))
+            }
+          </ul>
+        )
+      }
+
+      <div class="page-podcasts-reflection" aria-hidden="true"></div>
+    </div>
   </main>
 </BaseLayout>

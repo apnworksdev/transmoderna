@@ -4,12 +4,13 @@ import {
   SHOP_DOCUMENT_ID,
   SITE_HEADER_DOCUMENT_ID,
   EXHIBITIONS_PAGE_DOCUMENT_ID,
+  PODCAST_PAGE_DOCUMENT_ID,
+  PORTFOLIO_PAGE_DOCUMENT_ID,
   WORK_PAGE_DOCUMENT_ID
 } from '@repo/shared';
 import {
   BasketIcon,
   CaseIcon,
-  CogIcon,
   ControlsIcon,
   DocumentIcon,
   DocumentsIcon,
@@ -76,6 +77,20 @@ export const structure: StructureResolver = (S) =>
                 .icon(PresentationIcon)
                 .child(
                   S.document().schemaType('exhibitionsPage').documentId(EXHIBITIONS_PAGE_DOCUMENT_ID)
+                ),
+              S.listItem()
+                .title('Portfolio')
+                .id(PORTFOLIO_PAGE_DOCUMENT_ID)
+                .icon(ImagesIcon)
+                .child(
+                  S.document().schemaType('portfolioPage').documentId(PORTFOLIO_PAGE_DOCUMENT_ID)
+                ),
+              S.listItem()
+                .title('Podcasts')
+                .id(PODCAST_PAGE_DOCUMENT_ID)
+                .icon(MicrophoneIcon)
+                .child(
+                  S.document().schemaType('podcastPage').documentId(PODCAST_PAGE_DOCUMENT_ID)
                 )
             ])
         ),
@@ -94,7 +109,6 @@ export const structure: StructureResolver = (S) =>
               S.documentTypeListItem('artist').title('Artists').icon(UserIcon),
               S.divider(),
               S.documentTypeListItem('product').title('Products').icon(BasketIcon),
-              S.documentTypeListItem('productVariant').title('Product variants').icon(CogIcon),
               S.documentTypeListItem('brand').title('Brands'),
               S.documentTypeListItem('tag').title('Tags').icon(TagIcon)
             ])

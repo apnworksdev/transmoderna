@@ -11,10 +11,10 @@ export const contactSectionType = defineType({
       type: 'string'
     }),
     defineField({
-      name: 'body',
-      title: 'Body',
+      name: 'links',
+      title: 'Links',
       type: 'array',
-      of: [{ type: 'block' }]
+      of: [{ type: 'connectLink' }]
     })
   ]
 });

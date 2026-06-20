@@ -1,0 +1,52 @@
+---
+import { fade } from 'astro:transitions';
+
+interface Props {
+  initialQuery?: string;
+}
+
+const { initialQuery = '' } = Astro.props;
+const showSearchField = initialQuery.length > 0;
+---
+
+<nav
+  class:list={['page-shop-bottom', { 'is-search-open': showSearchField }]}
+  aria-label="Shop navigation"
+  data-shop-bottom
+>
+  <div class="page-shop-bottom-inner">
+    <div class="page-shop-bottom-search" data-shop-search>
+      <button
+        type="button"
+        class="page-shop-bottom-pill site-header-pill page-shop-bottom-search-btn"
+        data-shop-search-toggle
+        aria-expanded={showSearchField ? 'true' : 'false'}
+        aria-controls="shop-search-field"
+      >
+        Search
+      </button>
+
+      <input
+        id="shop-search-field"
+        type="search"
+        class="page-shop-bottom-pill site-header-pill page-shop-bottom-search-field"
+        data-shop-search-input
+        value={initialQuery}
+        placeholder="Search"
+        autocomplete="off"
+        spellcheck="false"
+        aria-label="Search products"
+      />
+    </div>
+
+    <a
+      class="page-shop-bottom-pill site-header-pill page-shop-bottom-cart"
+      href="/shop/cart"
+      transition:animate={fade({ duration: '600ms' })}
+      data-shop-cart-link
+    >
+      Cart
+      <span class="page-shop-bottom-cart-count" data-cart-count hidden></span>
+    </a>
+  </div>
+</nav>

@@ -1,0 +1,40 @@
+---
+interface Props {
+  src?: string;
+  title: string;
+}
+
+const { src, title } = Astro.props;
+---
+
+{
+  src ? (
+    <div class="page-portfolio-video" data-portfolio-video>
+      <video
+        class="page-portfolio-video-media"
+        data-portfolio-video-media
+        title={title}
+        playsinline
+        preload="auto"
+        disablepictureinpicture
+        disableRemotePlayback
+      >
+        <source src={src} type="video/mp4" />
+      </video>
+
+      <button
+        type="button"
+        class="page-portfolio-video-progress"
+        data-portfolio-video-progress
+        aria-label="Video progress"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={0}
+      >
+        <span class="page-portfolio-video-progress-track">
+          <span class="page-portfolio-video-progress-fill" data-portfolio-video-progress-fill />
+        </span>
+      </button>
+    </div>
+  ) : null
+}

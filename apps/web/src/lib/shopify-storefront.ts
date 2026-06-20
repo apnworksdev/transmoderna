@@ -8,6 +8,13 @@ export type StorefrontVariant = {
   title: string;
   availableForSale: boolean;
   price?: { amount: string; currencyCode: string };
+  selectedOptions?: Array<{ name: string; value: string }>;
+  image?: { url?: string; altText?: string | null } | null;
+};
+
+export type StorefrontProductMedia = {
+  images: Array<{ url: string; altText?: string | null }>;
+  options: Array<{ name: string; values: string[] }>;
 };
 
 export function isStorefrontConfigured(): boolean {
@@ -52,13 +59,17 @@ async function storefrontFetch<T>(
   return json.data;
 }
 
+function inContextDirective(country: string | null): string {
+  return country ? '@inContext(country: $country)' : '';
+}
+
 export async function fetchProductVariantsByHandle(
   handle: string
 ): Promise<StorefrontVariant[]> {
   const country = typeof marketCountry === 'string' && marketCountry ? marketCountry : null;
 
   const query = country
-    ? `query ProductVariants($handle: String!, $country: CountryCode!) @inContext(country: $country) {
+    ? `query ProductVariants($handle: String!, $country: CountryCode!) ${inContextDirective(country)} {
         product(handle: $handle) {
           variants(first: 50) {
             edges {
@@ -67,6 +78,8 @@ export async function fetchProductVariantsByHandle(
                 title
                 availableForSale
                 price { amount currencyCode }
+                selectedOptions { name value }
+                image { url altText }
               }
             }
           }
@@ -81,6 +94,8 @@ export async function fetchProductVariantsByHandle(
                 title
                 availableForSale
                 price { amount currencyCode }
+                selectedOptions { name value }
+                image { url altText }
               }
             }
           }
@@ -98,4 +113,63 @@ export async function fetchProductVariantsByHandle(
   return (data.product?.variants?.edges ?? [])
     .map((edge) => edge.node)
     .filter((node): node is StorefrontVariant => Boolean(node?.id));
+}
+
+export async function fetchProductMediaByHandle(
+  handle: string
+): Promise<StorefrontProductMedia | null> {
+  const country = typeof marketCountry === 'string' && marketCountry ? marketCountry : null;
+
+  const query = country
+    ? `query ProductMedia($handle: String!, $country: CountryCode!) ${inContextDirective(country)} {
+        product(handle: $handle) {
+          images(first: 12) {
+            edges {
+              node { url altText }
+            }
+          }
+          options {
+            name
+            values
+          }
+        }
+      }`
+    : `query ProductMedia($handle: String!) {
+        product(handle: $handle) {
+          images(first: 12) {
+            edges {
+              node { url altText }
+            }
+          }
+          options {
+            name
+            values
+          }
+        }
+      }`;
+
+  const data = await storefrontFetch<{
+    product?: {
+      images?: { edges?: Array<{ node?: { url?: string; altText?: string | null } }> };
+      options?: Array<{ name?: string; values?: string[] }>;
+    } | null;
+  }>(query, country ? { handle, country } : { handle });
+
+  if (!data.product) {
+    return null;
+  }
+
+  const images = (data.product.images?.edges ?? [])
+    .map((edge) => edge.node)
+    .filter((node): node is { url: string; altText?: string | null } => Boolean(node?.url))
+    .map((node) => ({ url: node.url, altText: node.altText }));
+
+  const options = (data.product.options ?? [])
+    .filter((option): option is { name: string; values: string[] } => Boolean(option?.name))
+    .map((option) => ({
+      name: option.name,
+      values: option.values ?? []
+    }));
+
+  return { images, options };
 }

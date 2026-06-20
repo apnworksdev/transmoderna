@@ -1,5 +1,7 @@
 ---
+import { fade } from 'astro:transitions';
 import type { ShopProduct } from '../../lib/shop';
+import { formatEurPrice } from '../../lib/shop-format';
 import { productDisplayPrice, productHandle, productImageUrl } from '../../lib/shop';
 
 interface Props {
@@ -11,12 +13,50 @@ const title = product.store?.title ?? 'Untitled product';
 const handle = productHandle(product);
 const imageUrl = productImageUrl(product);
 const price = productDisplayPrice(product);
+const href = handle ? `/shop/${handle}` : undefined;
 ---
 
-<article>
-  {imageUrl ? <img src={imageUrl} alt={title} loading="lazy" /> : null}
-  <h2>
-    {handle ? <a href={`/shop/${handle}`}>{title}</a> : title}
-  </h2>
-  {typeof price === 'number' ? <p>{price}</p> : null}
-</article>
+{
+  href ? (
+    <a
+      class="page-shop-card"
+      href={href}
+      data-shop-product-card
+      transition:animate={fade({ duration: '600ms' })}
+    >
+      <div class="page-shop-card-header">
+        <span class="page-shop-card-title" data-shop-product-title>
+          {title}
+        </span>
+        {typeof price === 'number' ? (
+          <span class="page-shop-card-price">{formatEurPrice(price)}</span>
+        ) : null}
+      </div>
+      {imageUrl ? (
+        <div class="page-shop-card-media">
+          <img src={imageUrl} alt={title} loading="lazy" />
+        </div>
+      ) : (
+        <div class="page-shop-card-media" aria-hidden="true" />
+      )}
+    </a>
+  ) : (
+    <article class="page-shop-card" data-shop-product-card>
+      <div class="page-shop-card-header">
+        <span class="page-shop-card-title" data-shop-product-title>
+          {title}
+        </span>
+        {typeof price === 'number' ? (
+          <span class="page-shop-card-price">{formatEurPrice(price)}</span>
+        ) : null}
+      </div>
+      {imageUrl ? (
+        <div class="page-shop-card-media">
+          <img src={imageUrl} alt={title} loading="lazy" />
+        </div>
+      ) : (
+        <div class="page-shop-card-media" aria-hidden="true" />
+      )}
+    </article>
+  )
+}

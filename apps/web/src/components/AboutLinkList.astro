@@ -1,0 +1,39 @@
+---
+import type { ConnectLink } from '../lib/sanity';
+
+interface Props {
+  links?: ConnectLink[] | null;
+}
+
+const { links } = Astro.props;
+
+function isExternalLink(url: string): boolean {
+  return /^https?:\/\//i.test(url);
+}
+---
+
+{
+  links && links.length > 0 ? (
+    <ul class="page-about-links">
+      {
+        links.map((link) => (
+          <li>
+            {
+              link.url ? (
+                isExternalLink(link.url) ? (
+                  <a href={link.url} target="_blank" rel="noopener noreferrer">
+                    {link.label ?? link.url}
+                  </a>
+                ) : (
+                  <a href={link.url}>{link.label ?? link.url}</a>
+                )
+              ) : (
+                <span>{link.label}</span>
+              )
+            }
+          </li>
+        ))
+      }
+    </ul>
+  ) : null
+}

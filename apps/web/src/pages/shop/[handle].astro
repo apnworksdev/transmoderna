@@ -1,14 +1,18 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import PortableTextHtml from '../../components/PortableTextHtml.astro';
 import ProductBuy from '../../components/shop/ProductBuy.astro';
-import ShopCartShell from '../../components/shop/ShopCartShell.astro';
+import ShopProductToolbar from '../../components/shop/ShopProductToolbar.astro';
 import { getShopProductByHandle, productHandle, productImageUrl } from '../../lib/shop';
+import {
+  fetchProductMediaByHandle,
+  fetchProductVariantsByHandle
+} from '../../lib/shopify-storefront';
+import '../../styles/pages/shop.css';
 
 export const prerender = false;
 
 const { handle } = Astro.params;
-if (!handle) {
+if (!handle || handle === 'cart') {
   return new Response(null, { status: 404, statusText: 'Not Found' });
 }
 
@@ -18,30 +22,77 @@ if (!product) {
 }
 
 const title = product.store?.title ?? 'Product';
-const imageUrl = productImageUrl(product);
 const slug = productHandle(product) ?? handle;
+const fallbackImage = productImageUrl(product);
+const media = await fetchProductMediaByHandle(slug);
+const variants = await fetchProductVariantsByHandle(slug);
+const images =
+  media?.images.length
+    ? media.images
+    : fallbackImage
+      ? [{ url: fallbackImage, altText: title }]
+      : [];
+const heroImage = images[0];
+const imagesJson = JSON.stringify(images);
 const shopifyDomain = import.meta.env.PUBLIC_SHOPIFY_DOMAIN ?? '';
 const storefrontToken = import.meta.env.PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN ?? '';
 const marketCountry = import.meta.env.PUBLIC_SHOPIFY_MARKET_COUNTRY ?? '';
 ---
 
-<BaseLayout title={`${title} — Shop — Transmoderna`}>
+<BaseLayout title={`${title} — Shop — Transmoderna`} hideSiteHeader>
   <main
+    class="page-shop page-shop-product"
     data-shop-root
+    data-shop-page="product"
     data-shopify-domain={shopifyDomain}
     data-storefront-token={storefrontToken}
     data-market-country={marketCountry}
     data-product-handle={slug}
+    data-product-images={imagesJson}
   >
-    <p><a href="/shop">← Shop</a></p>
-    <h1>{title}</h1>
+    <ShopProductToolbar title={title} />
 
-    {imageUrl ? <img src={imageUrl} alt={title} loading="lazy" /> : null}
+    <div
+      class:list={[
+        'page-shop-product-layout',
+        { 'page-shop-product-layout--no-sidebar': images.length <= 1 }
+      ]}
+    >
+      <div class="page-shop-product-panel">
+        <ProductBuy product={product} variants={variants} options={media?.options} />
+      </div>
 
-    {product.body ? <PortableTextHtml blocks={product.body} /> : null}
+      {
+        images.length > 1 ? (
+          <aside class="page-shop-product-sidebar" aria-label="Product images">
+            {images.map((image, index) => (
+              <button
+                type="button"
+                class="page-shop-product-thumb"
+                data-product-thumb
+                data-image-url={image.url}
+                aria-current={index === 0 ? 'true' : 'false'}
+                aria-label={`View image ${index + 1}`}
+              >
+                <img src={image.url} alt={image.altText ?? title} loading="lazy" />
+              </button>
+            ))}
+          </aside>
+        ) : null
+      }
 
-    <ProductBuy product={product} />
-
-    <ShopCartShell />
+      <div class="page-shop-product-media">
+        {
+          heroImage ? (
+            <img
+              src={heroImage.url}
+              alt={heroImage.altText ?? title}
+              data-product-hero
+              loading="eager"
+            />
+          ) : null
+        }
+      </div>
+    </div>
   </main>
 </BaseLayout>

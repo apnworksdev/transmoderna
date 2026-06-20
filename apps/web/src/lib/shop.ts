@@ -48,6 +48,7 @@ const productFields = `{
     descriptionHtml,
     priceRange{minVariantPrice, maxVariantPrice},
     tags,
+    options[]{ name, values },
     variants[]->{
       _id,
       "title": coalesce(store.title, store.option1),
@@ -81,6 +82,7 @@ export type ShopProduct = {
     priceRange?: { minVariantPrice?: number; maxVariantPrice?: number };
     isDeleted?: boolean;
     tags?: string;
+    options?: Array<{ name?: string; values?: string[] | null }> | null;
     variants?: Array<{
       _id: string;
       title?: string;

@@ -69,7 +69,8 @@ export const shopifyProductType = defineType({
       name: 'tags',
       title: 'Tags',
       type: 'string',
-      description: 'Comma-separated tags from Shopify'
+      hidden: () => true,
+      description: 'Synced from Shopify. Hidden in Studio — not needed for editorial work.'
     }),
     defineField({ name: 'priceRange', type: 'priceRange' }),
     defineField({
@@ -80,12 +81,14 @@ export const shopifyProductType = defineType({
     defineField({
       name: 'options',
       type: 'array',
+      hidden: () => true,
       of: [{ type: 'option' }]
     }),
     defineField({
       fieldset: 'variants',
       name: 'variants',
       type: 'array',
+      hidden: () => true,
       of: [
         defineArrayMember({
           title: 'Variant',

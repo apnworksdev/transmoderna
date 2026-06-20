@@ -1,76 +1,165 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import AboutLinkList from '../../components/AboutLinkList.astro';
 import PortableTextHtml from '../../components/PortableTextHtml.astro';
-import SanityImage from '../../components/SanityImage.astro';
-import { getAbout } from '../../lib/sanity';
+import { getAbout, imageAlt, urlForSanityImage } from '../../lib/sanity';
+import '../../styles/pages/about.css';
 
 const about = await getAbout();
+const teamMembers = about?.teamMembers ?? [];
+const copyrightYear = new Date().getFullYear();
 ---
 
 <BaseLayout title="About — Transmoderna">
-  <main>
-    <h1>About</h1>
+  <main class="page-about" data-about-page>
+    <div class="page-about-bg" aria-hidden="true">
+      <video
+        title="Transmoderna"
+        muted
+        loop
+        playsinline
+        preload="auto"
+        data-autoplay-video
+      >
+        <source src="/video/home-desktop.mp4" type="video/mp4" />
+      </video>
+    </div>
+
     {
       !about ? (
-        <p>No about content yet. Add content in Sanity Studio → About.</p>
+        <p class="page-about-empty">No about content yet. Add content in Sanity Studio → About.</p>
       ) : (
-        <>
-          {about.description ? <PortableTextHtml blocks={about.description} /> : null}
-
-          {about.teamMembers && about.teamMembers.length > 0 ? (
-            <section>
-              <h2>Team</h2>
-              <ul>
-                {
-                  about.teamMembers.map((member) => (
-                    <li>
-                      <article>
-                        {member.name ? <h3>{member.name}</h3> : null}
-                        {member.image ? (
-                          <SanityImage
-                            image={member.image}
-                            altFallback={member.name ?? 'Team member'}
-                            width={400}
-                          />
-                        ) : null}
-                        {member.description ? (
-                          <PortableTextHtml blocks={member.description} />
-                        ) : null}
-                      </article>
-                    </li>
-                  ))
-                }
-              </ul>
+        <div class="page-about-inner">
+          <div class="page-about-left">
+            <section class="page-about-section">
+              <h1 class="page-about-label">About</h1>
+              {
+                about.description ? (
+                  <div class="page-about-description">
+                    <PortableTextHtml blocks={about.description} />
+                  </div>
+                ) : null
+              }
             </section>
-          ) : null}
 
-          {about.contact ? (
-            <section>
-              {about.contact.heading ? <h2>{about.contact.heading}</h2> : <h2>Contact</h2>}
-              {about.contact.body ? <PortableTextHtml blocks={about.contact.body} /> : null}
-            </section>
-          ) : null}
+            <div class="page-about-left-bottom">
+              {
+                about.contact?.links && about.contact.links.length > 0 ? (
+                  <section class="page-about-section">
+                    <h2 class="page-about-label">{about.contact.heading ?? 'Contact'}</h2>
+                    <AboutLinkList links={about.contact.links} />
+                  </section>
+                ) : null
+              }
 
-          {about.connect?.links && about.connect.links.length > 0 ? (
-            <section>
-              {about.connect.heading ? <h2>{about.connect.heading}</h2> : <h2>Connect</h2>}
-              <ul>
-                {
-                  about.connect.links.map((link) => (
-                    <li>
-                      {link.url ? (
-                        <a href={link.url}>{link.label ?? link.url}</a>
-                      ) : (
-                        <span>{link.label}</span>
-                      )}
-                    </li>
-                  ))
-                }
-              </ul>
-            </section>
-          ) : null}
-        </>
+              {
+                about.connect?.links && about.connect.links.length > 0 ? (
+                  <section class="page-about-section">
+                    <h2 class="page-about-label">{about.connect.heading ?? 'Connect'}</h2>
+                    <AboutLinkList links={about.connect.links} />
+                  </section>
+                ) : null
+              }
+            </div>
+          </div>
+
+          {
+            teamMembers.length > 0 ? (
+              <section class="page-about-section page-about-team" data-about-team>
+                <h2 class="page-about-label">Team</h2>
+                <ul class="page-about-team-list">
+                  {
+                    teamMembers.map((member) => {
+                      const imageSrc = urlForSanityImage(member.image, { width: 1400 });
+                      const memberAlt = imageAlt(member.image, member.name ?? 'Team member');
+                      const hasImage = Boolean(imageSrc);
+                      const hasDescription = Boolean(member.description?.length);
+                      const showToggle = hasImage && hasDescription;
+
+                      return (
+                        <li>
+                          <details class="page-about-team-item" data-about-member>
+                            <summary class="page-about-team-name">{member.name}</summary>
+
+                            <div class="page-about-member-aspect">
+                              <div class="page-about-member-visual">
+                              {
+                                hasImage ? (
+                                  <figure class="page-about-member-figure" data-about-member-figure>
+                                    <img
+                                      src={imageSrc}
+                                      alt={memberAlt}
+                                      width={1400}
+                                      loading="lazy"
+                                      decoding="async"
+                                    />
+                                  </figure>
+                                ) : !hasDescription ? (
+                                  <div class="page-about-member-placeholder" aria-hidden="true" />
+                                ) : null
+                              }
+
+                              {
+                                hasDescription ? (
+                                  <div
+                                    class="page-about-member-info"
+                                    data-about-member-info
+                                    hidden={hasImage}
+                                  >
+                                    <PortableTextHtml blocks={member.description} />
+                                  </div>
+                                ) : null
+                              }
+
+                              {
+                                showToggle ? (
+                                  <div
+                                    class="page-about-member-toggle"
+                                    role="group"
+                                    aria-label={`${member.name ?? 'Member'} view`}
+                                  >
+                                    <button
+                                      type="button"
+                                      class="page-about-member-toggle-btn is-active"
+                                      data-about-view="img"
+                                      aria-pressed="true"
+                                    >
+                                      Img
+                                    </button>
+                                    <button
+                                      type="button"
+                                      class="page-about-member-toggle-btn"
+                                      data-about-view="info"
+                                      aria-pressed="false"
+                                    >
+                                      Info
+                                    </button>
+                                  </div>
+                                ) : null
+                              }
+                              </div>
+                            </div>
+                          </details>
+                        </li>
+                      );
+                    })
+                  }
+                </ul>
+              </section>
+            ) : null
+          }
+        </div>
       )
     }
+
+    <footer class="page-about-footer">
+      <time class="page-about-clock site-header-pill" datetime="" data-about-clock>
+        00:00:00
+      </time>
+      <p class="page-about-copyright">
+        <span>(c) {copyrightYear} TRANSMODERNA</span>
+        <span>All rights reserved.</span>
+      </p>
+    </footer>
   </main>
 </BaseLayout>

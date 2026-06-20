@@ -48,7 +48,22 @@ export function nextFrame(): Promise<void> {
   });
 }
 
-export function waitTransition(element: HTMLElement, timeoutMs = 800): Promise<void> {
+export function waitTransition(
+  element: HTMLElement,
+  options: {
+    timeoutMs?: number;
+    slideClass?: string;
+    figureClass?: string;
+    propertyNames?: string[];
+  } = {}
+): Promise<void> {
+  const {
+    timeoutMs = 800,
+    slideClass = 'page-exhibitions-thumbnail-slide',
+    figureClass,
+    propertyNames = ['transform']
+  } = options;
+
   return new Promise((resolve) => {
     let done = false;
     const finish = () => {
@@ -65,10 +80,14 @@ export function waitTransition(element: HTMLElement, timeoutMs = 800): Promise<v
       if (!(target instanceof HTMLElement)) {
         return;
       }
-      if (!target.classList.contains('page-exhibitions-thumbnail-slide')) {
+
+      const matchesSlide = target.classList.contains(slideClass);
+      const matchesFigure = figureClass ? target.classList.contains(figureClass) : false;
+      if (!matchesSlide && !matchesFigure) {
         return;
       }
-      if (event.propertyName === 'transform') {
+
+      if (propertyNames.includes(event.propertyName)) {
         finish();
       }
     };

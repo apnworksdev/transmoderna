@@ -1,0 +1,64 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PodcastMiniPlayer from '../../components/podcast/PodcastMiniPlayer.astro';
+import PodcastPlayerBar from '../../components/podcast/PodcastPlayerBar.astro';
+import {
+  getPodcastBySlug,
+  getPodcastsPage,
+  imageAlt,
+  urlForSanityImage
+} from '../../lib/sanity';
+import '../../styles/pages/podcasts.css';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+if (!slug) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
+}
+
+const [podcast, podcastsPage] = await Promise.all([getPodcastBySlug(slug), getPodcastsPage()]);
+
+if (!podcast) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
+}
+
+const backgroundSrc = urlForSanityImage(podcastsPage?.backgroundImage, { width: 2400 });
+const backgroundAlt = imageAlt(podcastsPage?.backgroundImage, 'Podcast page background');
+const pageTitle = podcast.title ? `${podcast.title} — Transmoderna` : 'Podcast — Transmoderna';
+---
+
+<BaseLayout title={pageTitle} hideSiteHeader>
+  <main class="page-podcasts-single">
+    {
+      backgroundSrc ? (
+        <div class="page-podcasts-single-bg" aria-hidden="true">
+          <img
+            src={backgroundSrc}
+            alt={backgroundAlt}
+            width={2400}
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+          />
+        </div>
+      ) : null
+    }
+
+    <div class="page-podcasts-single-gradient" aria-hidden="true"></div>
+
+    <div class="page-podcasts-single-inner" data-podcast-root>
+      <audio data-podcast-audio preload="none"></audio>
+
+      <div class="page-podcasts-single-toolbar">
+        <a class="page-podcasts-single-close site-header-pill" href="/podcasts">CLOSE</a>
+      </div>
+
+      <div class="page-podcasts-single-player">
+        <PodcastPlayerBar podcast={podcast} variant="detail" />
+      </div>
+
+      <PodcastMiniPlayer title={podcast.title ?? 'Podcast'} />
+    </div>
+  </main>
+</BaseLayout>

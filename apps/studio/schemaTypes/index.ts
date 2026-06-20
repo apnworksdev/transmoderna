@@ -6,7 +6,9 @@ import { exhibitionType } from './documents/exhibition';
 import { exhibitionsPageType } from './documents/exhibitionsPage';
 import { homeType } from './documents/home';
 import { podcastType } from './documents/podcast';
+import { podcastPageType } from './documents/podcastPage';
 import { portfolioItemType } from './documents/portfolioItem';
+import { portfolioPageType } from './documents/portfolioPage';
 import { productType } from './documents/product';
 import { productVariantType } from './documents/productVariant';
 import { shopType } from './documents/shop';
@@ -19,7 +21,6 @@ import { clientType } from './objects/client';
 import { connectLinkType } from './objects/connectLink';
 import { connectSectionType } from './objects/connectSection';
 import { contactSectionType } from './objects/contactSection';
-import { portfolioMediaType } from './objects/portfolioMedia';
 import { teamMemberType } from './objects/teamMember';
 import { vimeoVideoType } from './objects/vimeoVideo';
 import { exhibitionColumnType } from './objects/exhibitionColumn';
@@ -44,7 +45,6 @@ export const schemaTypes: SchemaTypeDefinition[] = [
   exhibitionTwoColumnBlockType,
   workMediaType,
   siteMenuLinkType,
-  portfolioMediaType,
   teamMemberType,
   contactSectionType,
   clientType,
@@ -59,7 +59,9 @@ export const schemaTypes: SchemaTypeDefinition[] = [
   exhibitionsPageType,
   exhibitionType,
   artistType,
+  portfolioPageType,
   portfolioItemType,
+  podcastPageType,
   podcastType,
   brandType,
   tagType,

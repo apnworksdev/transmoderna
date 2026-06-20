@@ -2,6 +2,8 @@ import {
   ABOUT_DOCUMENT_ID,
   EXHIBITIONS_PAGE_DOCUMENT_ID,
   HOME_DOCUMENT_ID,
+  PODCAST_PAGE_DOCUMENT_ID,
+  PORTFOLIO_PAGE_DOCUMENT_ID,
   SITE_HEADER_DOCUMENT_ID,
   WORK_PAGE_DOCUMENT_ID
 } from '@repo/shared';
@@ -133,12 +135,18 @@ export type ExhibitionsPageDocument = {
 export type PortfolioItemDocument = {
   _id: string;
   title?: string;
-  media?: {
-    kind?: 'image' | 'vimeo';
-    image?: SanityImageWithAlt;
-    vimeo?: VimeoVideo;
-  };
+  slug?: { current?: string };
+  subtitle?: string;
+  year?: number;
+  thumbnailImage?: SanityImageWithAlt;
+  videoUrl?: string;
+  videoSrc?: string;
   sortOrder?: number;
+};
+
+export type PortfolioPageDocument = {
+  backgroundImage?: SanityImageWithAlt;
+  portfolioItems?: PortfolioItemDocument[];
 };
 
 export type PodcastDocument = {
@@ -146,8 +154,15 @@ export type PodcastDocument = {
   title?: string;
   podcaster?: string;
   number?: number;
-  url?: string;
+  slug?: { current?: string };
+  publishDate?: string;
+  audioFileUrl?: string;
   sortOrder?: number;
+};
+
+export type PodcastPageDocument = {
+  backgroundImage?: SanityImageWithAlt;
+  podcasts?: PodcastDocument[];
 };
 
 export type TeamMember = {
@@ -166,7 +181,7 @@ export type AboutDocument = {
   teamMembers?: TeamMember[];
   contact?: {
     heading?: string;
-    body?: PortableTextBlock[];
+    links?: ConnectLink[];
   };
   connect?: {
     heading?: string;
@@ -521,37 +536,184 @@ export async function getExhibitionBySlug(slug: string): Promise<ExhibitionDocum
   return enrichExhibition(exhibition);
 }
 
-export async function getPortfolioItems(): Promise<PortfolioItemDocument[]> {
-  if (!client) {
-    return [];
-  }
-  return client.fetch<PortfolioItemDocument[]>(
-    `*[_type == "portfolioItem"] | order(sortOrder asc){
-      _id,
-      title,
-      media {
-        kind,
-        image { ..., alt },
-        vimeo
-      },
-      sortOrder
-    }`
+const portfolioItemProjection = `{
+  _id,
+  title,
+  slug,
+  subtitle,
+  year,
+  thumbnailImage { ..., alt, asset->{ url, mimeType } },
+  videoUrl,
+  sortOrder
+}`;
+
+async function enrichPortfolioItems(
+  items: PortfolioItemDocument[]
+): Promise<PortfolioItemDocument[]> {
+  const { resolveVimeoVideoSrc } = await import('./vimeo');
+
+  return Promise.all(
+    items.map(async (item) => {
+      const videoUrl = item.videoUrl?.trim();
+      if (!videoUrl) {
+        return item;
+      }
+
+      const videoSrc = await resolveVimeoVideoSrc(videoUrl);
+      return videoSrc ? { ...item, videoSrc } : item;
+    })
   );
 }
 
-export async function getPodcasts(): Promise<PodcastDocument[]> {
+export async function getPortfolioPage(): Promise<PortfolioPageDocument | null> {
   if (!client) {
-    return [];
+    return null;
   }
-  return client.fetch<PodcastDocument[]>(
-    `*[_type == "podcast"] | order(sortOrder asc, number desc){
-      _id,
-      title,
-      podcaster,
-      number,
-      url,
-      sortOrder
-    }`
+
+  const page = await client.fetch<PortfolioPageDocument | null>(
+    `*[_type == "portfolioPage" && _id == $id][0]{
+      backgroundImage { ..., alt, asset->{ url, mimeType } },
+      "portfolioItems": portfolioItems[]->${portfolioItemProjection}
+    }`,
+    { id: PORTFOLIO_PAGE_DOCUMENT_ID }
+  );
+
+  if (!page) {
+    return null;
+  }
+
+  let portfolioItems = (page.portfolioItems ?? []).filter((item): item is PortfolioItemDocument =>
+    Boolean(item?._id)
+  );
+
+  if (portfolioItems.length === 0) {
+    portfolioItems = await client.fetch<PortfolioItemDocument[]>(
+      `*[_type == "portfolioItem"] | order(sortOrder asc) ${portfolioItemProjection}`
+    );
+  }
+
+  return {
+    backgroundImage: page.backgroundImage,
+    portfolioItems: await enrichPortfolioItems(portfolioItems)
+  };
+}
+
+export async function getPortfolioItemBySlug(slug: string): Promise<PortfolioItemDocument | null> {
+  if (!client) {
+    return null;
+  }
+
+  const item = await client.fetch<PortfolioItemDocument | null>(
+    `*[_type == "portfolioItem" && slug.current == $slug][0] ${portfolioItemProjection}`,
+    { slug }
+  );
+
+  if (!item) {
+    return null;
+  }
+
+  const [enriched] = await enrichPortfolioItems([item]);
+  return enriched ?? null;
+}
+
+export async function getPortfolioItems(): Promise<PortfolioItemDocument[]> {
+  const page = await getPortfolioPage();
+  return page?.portfolioItems ?? [];
+}
+
+export async function getPodcasts(): Promise<PodcastDocument[]> {
+  const page = await getPodcastsPage();
+  return page?.podcasts ?? [];
+}
+
+const podcastDocumentProjection = `{
+  _id,
+  title,
+  podcaster,
+  number,
+  slug,
+  publishDate,
+  sortOrder,
+  "audioFileUrl": audioFile.asset->url
+}`;
+
+export function formatPodcastNumber(number: number | null | undefined): string {
+  if (number == null || !Number.isFinite(number)) {
+    return '000';
+  }
+
+  return String(Math.max(0, Math.floor(number))).padStart(3, '0');
+}
+
+export function formatPodcastDate(isoDate: string | null | undefined): string {
+  if (!isoDate) {
+    return '';
+  }
+
+  const [year, month, day] = isoDate.split('-');
+  if (!year || !month || !day) {
+    return isoDate;
+  }
+
+  return `${day}.${month}.${year}`;
+}
+
+export function formatElapsedTime(totalSeconds: number): string {
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) {
+    return '00:00:00';
+  }
+
+  const seconds = Math.floor(totalSeconds);
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+
+  return [hours, minutes, remainingSeconds]
+    .map((value) => String(value).padStart(2, '0'))
+    .join(':');
+}
+
+export async function getPodcastsPage(): Promise<PodcastPageDocument | null> {
+  if (!client) {
+    return null;
+  }
+
+  const page = await client.fetch<PodcastPageDocument | null>(
+    `*[_type == "podcastPage" && _id == $id][0]{
+      backgroundImage { ..., alt, asset->{ url, mimeType } },
+      "podcasts": podcasts[]->${podcastDocumentProjection}
+    }`,
+    { id: PODCAST_PAGE_DOCUMENT_ID }
+  );
+
+  if (!page) {
+    return null;
+  }
+
+  let podcasts = (page.podcasts ?? []).filter((podcast): podcast is PodcastDocument =>
+    Boolean(podcast?._id)
+  );
+
+  if (podcasts.length === 0) {
+    podcasts = await client.fetch<PodcastDocument[]>(
+      `*[_type == "podcast"] | order(sortOrder asc, number desc) ${podcastDocumentProjection}`
+    );
+  }
+
+  return {
+    backgroundImage: page.backgroundImage,
+    podcasts
+  };
+}
+
+export async function getPodcastBySlug(slug: string): Promise<PodcastDocument | null> {
+  if (!client) {
+    return null;
+  }
+
+  return client.fetch<PodcastDocument | null>(
+    `*[_type == "podcast" && slug.current == $slug][0] ${podcastDocumentProjection}`,
+    { slug }
   );
 }
 
@@ -565,7 +727,7 @@ export async function getAbout(): Promise<AboutDocument | null> {
       teamMembers[]{
         name,
         description,
-        image { ..., alt }
+        image { ..., alt, asset->{ url, mimeType } }
       },
       contact,
       connect

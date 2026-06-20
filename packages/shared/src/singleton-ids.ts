@@ -4,3 +4,5 @@ export const SHOP_DOCUMENT_ID = 'shop';
 export const SITE_HEADER_DOCUMENT_ID = 'siteHeader';
 export const WORK_PAGE_DOCUMENT_ID = 'workPage';
 export const EXHIBITIONS_PAGE_DOCUMENT_ID = 'exhibitionsPage';
+export const PORTFOLIO_PAGE_DOCUMENT_ID = 'portfolioPage';
+export const PODCAST_PAGE_DOCUMENT_ID = 'podcastPage';

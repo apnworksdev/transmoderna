@@ -1,9 +1,9 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import PortableTextHtml from '../../components/PortableTextHtml.astro';
-import ShopCartShell from '../../components/shop/ShopCartShell.astro';
+import ShopBottomBar from '../../components/shop/ShopBottomBar.astro';
 import ShopProductCard from '../../components/shop/ShopProductCard.astro';
 import { getShopPage } from '../../lib/shop';
+import '../../styles/pages/shop.css';
 
 const shop = await getShopPage();
 const products = shop?.products ?? [];
@@ -12,26 +12,25 @@ const hasReadToken = Boolean(readToken);
 const shopifyDomain = import.meta.env.PUBLIC_SHOPIFY_DOMAIN ?? '';
 const storefrontToken = import.meta.env.PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN ?? '';
 const marketCountry = import.meta.env.PUBLIC_SHOPIFY_MARKET_COUNTRY ?? '';
+const initialQuery = Astro.url.searchParams.get('q')?.trim() ?? '';
 ---
 
 <BaseLayout title="Shop — Transmoderna">
   <main
+    class="page-shop"
     data-shop-root
+    data-shop-page="index"
     data-shopify-domain={shopifyDomain}
     data-storefront-token={storefrontToken}
     data-market-country={marketCountry}
+    data-initial-search={initialQuery}
   >
-    <h1>Shop</h1>
-    {shop?.intro ? <PortableTextHtml blocks={shop.intro} /> : null}
-
-    <ShopCartShell />
-
     {
       products.length === 0 ? (
-        <div>
+        <div class="page-shop-token-notice">
           <p>
-            No products were returned from Sanity. This project’s dataset is not readable
-            without an API token (anonymous queries return 0 documents).
+            No products were returned from Sanity. This project’s dataset is not readable without an
+            API token (anonymous queries return 0 documents).
           </p>
           {!hasReadToken ? (
             <p>
@@ -41,20 +40,25 @@ const marketCountry = import.meta.env.PUBLIC_SHOPIFY_MARKET_COUNTRY ?? '';
             </p>
           ) : (
             <p>
-              <code>SANITY_API_READ_TOKEN</code> is set — restart <code>npm run dev:web</code>{' '}
-              if you just added it. For production, add the same variable in Netlify env settings.
+              <code>SANITY_API_READ_TOKEN</code> is set — restart <code>npm run dev:web</code> if
+              you just added it. For production, add the same variable in Netlify env settings.
             </p>
           )}
         </div>
       ) : (
-        <ul>
-          {products.map((product) => (
-            <li>
+        <>
+          <div class="page-shop-grid" data-shop-grid>
+            {products.map((product) => (
               <ShopProductCard product={product} />
-            </li>
-          ))}
-        </ul>
+            ))}
+          </div>
+          <p class="page-shop-empty" data-shop-search-empty hidden>
+            No products match.
+          </p>
+        </>
       )
     }
+
+    <ShopBottomBar initialQuery={initialQuery} />
   </main>
 </BaseLayout>

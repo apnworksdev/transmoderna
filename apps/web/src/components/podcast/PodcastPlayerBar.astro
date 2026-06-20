@@ -1,0 +1,98 @@
+---
+import {
+  formatPodcastDate,
+  formatPodcastNumber,
+  type PodcastDocument
+} from '../../lib/sanity';
+
+interface Props {
+  podcast: PodcastDocument;
+  variant?: 'index' | 'detail';
+}
+
+const { podcast, variant = 'index' } = Astro.props;
+
+const title = podcast.title ?? 'Podcast';
+const podcaster = podcast.podcaster ?? '';
+const episodeNumber = formatPodcastNumber(podcast.number);
+const publishDate = formatPodcastDate(podcast.publishDate);
+const slug = podcast.slug?.current;
+const detailHref = slug ? `/podcasts/${slug}` : undefined;
+const hasAudio = Boolean(podcast.audioFileUrl);
+---
+
+<div
+  class:list={['podcast-player-bar', { 'podcast-player-bar--detail': variant === 'detail' }]}
+  data-podcast-row
+  data-audio-src={podcast.audioFileUrl ?? ''}
+  data-podcast-id={podcast._id}
+>
+  <span class="podcast-player-bar__number">{episodeNumber}</span>
+
+  {
+    variant === 'detail' ? (
+      <span class="podcast-player-bar__series">{podcaster}</span>
+    ) : (
+      <span class="podcast-player-bar__series podcast-player-bar__series--plain">{podcaster}</span>
+    )
+  }
+
+  <span class="podcast-player-bar__title">{title}</span>
+
+  <button
+    type="button"
+    class="podcast-player-bar__control"
+    data-podcast-play-toggle
+    disabled={!hasAudio}
+    aria-label={`Play ${title}`}
+  >
+    PLAY
+  </button>
+
+  <button
+    type="button"
+    class="podcast-player-bar__progress"
+    data-podcast-progress
+    aria-label="Audio progress"
+    aria-valuemin={0}
+    aria-valuemax={100}
+    aria-valuenow={0}
+    disabled={!hasAudio}
+  >
+    <span class="podcast-player-bar__progress-track">
+      <span class="podcast-player-bar__progress-fill" data-podcast-progress-fill />
+    </span>
+  </button>
+
+  <button
+    type="button"
+    class="podcast-player-bar__control"
+    data-podcast-mute-toggle
+    aria-pressed="false"
+    disabled={!hasAudio}
+  >
+    MUTE
+  </button>
+
+  <span class="podcast-player-bar__elapsed" data-podcast-elapsed>00:00:00</span>
+
+  <time class="podcast-player-bar__date" datetime={podcast.publishDate ?? undefined}>
+    {publishDate}
+  </time>
+
+  {
+    variant === 'detail' ? (
+      <button type="button" class="podcast-player-bar__control" data-podcast-share>
+        SHARE
+      </button>
+    ) : detailHref ? (
+      <a class="podcast-player-bar__control podcast-player-bar__view" href={detailHref}>
+        VIEW
+      </a>
+    ) : (
+      <span class="podcast-player-bar__control podcast-player-bar__view podcast-player-bar__view--disabled">
+        VIEW
+      </span>
+    )
+  }
+</div>

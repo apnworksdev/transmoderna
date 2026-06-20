@@ -1,81 +1,135 @@
 ---
+import PortableTextHtml from '../PortableTextHtml.astro';
 import type { ShopProduct } from '../../lib/shop';
-import { variantAvailable, variantTitle } from '../../lib/shop';
+import { formatEurPrice, parsePriceAmount } from '../../lib/shop-format';
+import {
+  getDefaultVariant,
+  getInitialOptionSelections,
+  resolveProductOptions,
+  type ProductOption
+} from '../../lib/shop-options';
+import type { StorefrontVariant } from '../../lib/shopify-storefront';
 import { isStorefrontConfigured } from '../../lib/shopify-storefront';
 
 interface Props {
   product: ShopProduct;
+  variants: StorefrontVariant[];
+  options?: ProductOption[];
 }
 
-const { product } = Astro.props;
-const variants = (product.store?.variants ?? []).filter(
-  (v) => v.store?.gid || variantTitle(v) !== 'Variant'
-);
+const { product, variants, options: optionsProp } = Astro.props;
+const title = product.store?.title ?? 'Product';
+const options = resolveProductOptions(optionsProp, variants);
 const shopifyEnabled = isStorefrontConfigured();
-const defaultVariant = variants.find((v) => variantAvailable(v)) ?? variants[0];
+const defaultVariant = getDefaultVariant(variants);
+const initialSelections = getInitialOptionSelections(options, variants, defaultVariant);
+const defaultPrice = parsePriceAmount(defaultVariant?.price?.amount);
+const variantsPayload = JSON.stringify(
+  variants.map((variant) => ({
+    id: variant.id,
+    title: variant.title,
+    selectedOptions: variant.selectedOptions ?? [],
+    price: parsePriceAmount(variant.price?.amount),
+    available: variant.availableForSale
+  }))
+);
 ---
 
-<div data-product-buy>
-  {
-    variants.length === 0 ? (
-      <p>No variants synced yet.</p>
-    ) : variants.length === 1 ? (
-      <>
-        <input
-          type="hidden"
-          name="variant"
-          value={defaultVariant ? variantTitle(defaultVariant) : ''}
-          data-variant-radio
-          data-variant-title={defaultVariant ? variantTitle(defaultVariant) : ''}
-          data-price={
-            typeof defaultVariant?.store?.price === 'number'
-              ? String(defaultVariant.store.price)
-              : ''
-          }
-          checked
-        />
-        <p data-variant-price>
-          {typeof defaultVariant?.store?.price === 'number'
-            ? defaultVariant.store.price
-            : '—'}
-        </p>
-      </>
-    ) : (
-      <fieldset>
-        <legend>Select variant</legend>
-        <ul>
-          {
-            variants.map((v, idx) => {
-              const available = variantAvailable(v);
-              return (
-                <li>
-                  <label>
-                    <input
-                      type="radio"
-                      name="variant"
-                      value={variantTitle(v)}
-                      data-variant-radio
-                      data-variant-title={variantTitle(v)}
-                      data-price={typeof v.store?.price === 'number' ? String(v.store.price) : ''}
-                      checked={idx === 0}
-                      disabled={!available}
-                    />
-                    {variantTitle(v)}
-                    {!available ? ' (sold out)' : ''}
-                    {typeof v.store?.price === 'number' ? ` — ${v.store.price}` : ''}
-                  </label>
-                </li>
-              );
-            })
-          }
-        </ul>
-      </fieldset>
-    )
-  }
+<div class="page-shop-buy" data-product-buy data-product-variants={variantsPayload}>
+  <div class="page-shop-buy-panel">
+    <div class="page-shop-buy-row">
+      <h2 class="page-shop-buy-name">{title}</h2>
+      <div class="page-shop-buy-qty">
+        <span>Quantity</span>
+        <div class="page-shop-buy-qty-controls">
+          <button type="button" class="page-shop-buy-qty-btn" data-qty-minus aria-label="Decrease quantity">
+            −
+          </button>
+          <span class="page-shop-buy-qty-value" data-qty-value>1</span>
+          <button type="button" class="page-shop-buy-qty-btn" data-qty-plus aria-label="Increase quantity">
+            +
+          </button>
+        </div>
+      </div>
+    </div>
 
-  <p>
-    <button type="button" data-add-to-cart disabled={!shopifyEnabled || variants.length === 0}>
-      {shopifyEnabled ? 'Add to cart' : 'Shopify not configured'}
-    </button>
-  </p>
+    {
+      options.length > 0 ? (
+        <div class="page-shop-buy-options" data-product-options>
+          {options.map((option) => (
+            <div class="page-shop-buy-option" data-option-name={option.name}>
+              <span class="page-shop-buy-option-label">Select {option.name}</span>
+              <div class="page-shop-buy-option-buttons" role="group" aria-label={`Select ${option.name}`}>
+                {option.values.map((value) => {
+                  const isSelected = initialSelections.get(option.name) === value;
+                  return (
+                    <button
+                      type="button"
+                      class:list={['page-shop-buy-option-btn', { 'is-selected': isSelected }]}
+                      data-option-value={value}
+                      data-option-group={option.name}
+                      aria-pressed={isSelected ? 'true' : 'false'}
+                    >
+                      {value}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null
+    }
+
+    <div class="page-shop-buy-actions">
+      <span class="page-shop-buy-price" data-variant-price>
+        {typeof defaultPrice === 'number' ? formatEurPrice(defaultPrice) : '—'}
+      </span>
+      <button
+        type="button"
+        class="page-shop-buy-add"
+        data-add-to-cart
+        data-qty="1"
+        disabled={!shopifyEnabled || variants.length === 0 || !defaultVariant?.availableForSale}
+      >
+        {shopifyEnabled ? 'Add to cart' : 'Shopify not configured'}
+      </button>
+    </div>
+  </div>
+
+  <div class="page-shop-buy-variants-hidden" aria-hidden="true">
+    {
+      variants.length === 0 ? (
+        <p>No variants available.</p>
+      ) : (
+        variants.map((variant, idx) => {
+          const price = parsePriceAmount(variant.price?.amount);
+          const isDefault = variant.id === defaultVariant?.id || (idx === 0 && !defaultVariant);
+          return (
+            <input
+              type="radio"
+              name="variant"
+              value={variant.id}
+              data-variant-radio
+              data-variant-id={variant.id}
+              data-variant-title={variant.title}
+              data-price={typeof price === 'number' ? String(price) : ''}
+              checked={isDefault}
+              disabled={!variant.availableForSale}
+            />
+          );
+        })
+      )
+    }
+  </div>
+
+  {product.body ? (
+    <div class="page-shop-buy-description">
+      <PortableTextHtml blocks={product.body} />
+    </div>
+  ) : null}
+
+  <a class="page-shop-shipping-link site-header-pill" href="#">Shipping</a>
+
+  <p class="page-shop-buy-status" data-add-status aria-live="polite"></p>
 </div>

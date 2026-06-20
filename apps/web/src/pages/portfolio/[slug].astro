@@ -1,0 +1,35 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PortfolioVideoPlayer from '../../components/PortfolioVideoPlayer.astro';
+import { getPortfolioItemBySlug } from '../../lib/sanity';
+import '../../styles/pages/portfolio.css';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+if (!slug) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
+}
+
+const item = await getPortfolioItemBySlug(slug);
+
+if (!item) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
+}
+
+const pageTitle = item.title ? `${item.title} — Transmoderna` : 'Portfolio — Transmoderna';
+---
+
+<BaseLayout title={pageTitle} hideSiteHeader>
+  <main class="page-portfolio-detail">
+    <div class="page-portfolio-detail-toolbar">
+      <div class="page-portfolio-detail-title-wrap">
+        <h1 class="page-portfolio-detail-title">{item.title}</h1>
+      </div>
+
+      <a class="page-portfolio-detail-close site-header-pill" href="/portfolio">Close</a>
+    </div>
+
+    <PortfolioVideoPlayer src={item.videoSrc} title={item.title ?? 'Portfolio video'} />
+  </main>
+</BaseLayout>
