@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShopBackground from '../../components/shop/ShopBackground.astro';
 import ShopBottomBar from '../../components/shop/ShopBottomBar.astro';
 import ShopProductCard from '../../components/shop/ShopProductCard.astro';
 import { getShopPage } from '../../lib/shop';
@@ -30,6 +31,8 @@ Astro.response.headers.set(
     data-market-country={marketCountry}
     data-initial-search={initialQuery}
   >
+    <ShopBackground />
+
     {
       products.length === 0 ? (
         <div class="page-shop-token-notice">

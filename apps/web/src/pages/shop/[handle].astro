@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ProductBuy from '../../components/shop/ProductBuy.astro';
+import ShopBackground from '../../components/shop/ShopBackground.astro';
 import ShopBottomBar from '../../components/shop/ShopBottomBar.astro';
 import ShopProductToolbar from '../../components/shop/ShopProductToolbar.astro';
 import { getShopProductByHandle, productHandle, productImageUrl } from '../../lib/shop';
@@ -54,6 +55,8 @@ Astro.response.headers.set(
     data-product-images={imagesJson}
     data-variants-truncated={storefront?.variantsTruncated ? 'true' : 'false'}
   >
+    <ShopBackground />
+
     <ShopProductToolbar title={title} />
 
     <div

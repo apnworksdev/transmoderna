@@ -20,12 +20,15 @@ function setSearchOpen(open: boolean): void {
   const input = getSearchInput();
   if (!bottom || !toggle || !input) return;
 
+  const wasOpen = bottom.classList.contains('is-search-open');
   bottom.classList.toggle('is-search-open', open);
   toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
 
   if (open) {
     input.focus();
-    input.select();
+    if (!wasOpen) {
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
   }
 }
 
@@ -136,9 +139,15 @@ export function initShopSearch(): (() => void) | null {
 
   const onInput = () => {
     if (page === 'index') {
+      if (!bottom.classList.contains('is-search-open')) {
+        setSearchOpen(true);
+      }
       filterProducts(input.value);
-      setSearchOpen(true);
       return;
+    }
+
+    if (!bottom.classList.contains('is-search-open')) {
+      setSearchOpen(true);
     }
   };
 

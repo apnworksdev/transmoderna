@@ -26,6 +26,7 @@ body.site-menu-open {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  height: 29px;
   padding: 8.5px 16px;
   min-width: 100px;
   background-color: var(--gray-color);
@@ -35,6 +36,10 @@ body.site-menu-open {
   line-height: var(--line-height-xs);
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+.site-header-pill:focus-visible {
+  outline: none;
 }
 
 body.site-menu-open .site-header-pill {

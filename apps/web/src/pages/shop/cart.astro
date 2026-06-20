@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShopBackground from '../../components/shop/ShopBackground.astro';
 import ShopBottomBar from '../../components/shop/ShopBottomBar.astro';
 import ShopCartSummary from '../../components/shop/ShopCartSummary.astro';
 import '../../styles/pages/shop.css';
@@ -18,9 +19,7 @@ const marketCountry = import.meta.env.PUBLIC_SHOPIFY_MARKET_COUNTRY ?? '';
     data-storefront-token={storefrontToken}
     data-market-country={marketCountry}
   >
-    <div class="page-shop-cart-bg" aria-hidden="true">
-      <img alt="" data-cart-bg-image />
-    </div>
+    <ShopBackground />
 
     <div class="page-shop-cart-layout" data-cart-layout hidden>
       <ShopCartSummary />

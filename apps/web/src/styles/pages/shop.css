@@ -1,15 +1,16 @@
 .page-shop {
   --shop-bottom-h: 52px;
-  --shop-gap: 8px;
-  --shop-panel-bg: rgba(138, 138, 138, 0.35);
+  --shop-gap: 1px;
+  --shop-panel-bg: rgba(255, 255, 255, 0.25);
   --shop-panel-blur: 18px;
   --shop-header-offset: calc(var(--margin) + 48px);
-  --shop-footer-offset: calc(var(--margin) * 2 + var(--shop-bottom-h));
+  --shop-footer-offset: 78px;
 
   position: relative;
   min-height: 100dvh;
-  padding: var(--shop-header-offset) var(--margin) var(--shop-footer-offset);
-  background-color: var(--background-color);
+  padding: 170px 10% var(--shop-footer-offset);
+  background-color: transparent;
+  isolation: isolate;
 }
 
 .page-shop[data-shop-page='index'] {
@@ -17,28 +18,34 @@
   flex-direction: column;
 }
 
-.page-shop::before {
-  content: '';
+.page-shop-bg {
   position: fixed;
   inset: 0;
   z-index: 0;
+  overflow: hidden;
   pointer-events: none;
-  background:
-    radial-gradient(
-      ellipse 72% 58% at 50% 42%,
-      rgba(48, 48, 48, 0.55) 0%,
-      rgba(12, 12, 12, 0.92) 52%,
-      #000 100%
-    ),
-    #000;
 }
 
-.page-shop > * {
-  position: relative;
-  z-index: 1;
+.page-shop-bg img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(22px);
+  transform: scale(1.08);
 }
 
-/* Shop index */
+.page-shop-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.35) 45%,
+    rgba(0, 0, 0, 0.65) 100%
+  );
+}
 
 .page-shop-grid {
   display: grid;
@@ -49,19 +56,18 @@
 }
 
 .page-shop[data-shop-page='index'] .page-shop-grid {
-  flex: 1;
   min-height: 0;
   align-content: stretch;
   grid-auto-rows: minmax(0, 1fr);
 }
 
 .page-shop-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
   color: inherit;
   text-decoration: none;
-  border: solid 0.25px rgba(255, 255, 255, 0.35);
   border-radius: var(--border-radius);
   overflow: hidden;
   background-color: transparent;
@@ -72,16 +78,21 @@
 }
 
 .page-shop-card-header {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
   display: flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: var(--margin);
-  padding: 9px 12px;
+  padding: 8px 24px 6px 24px;
   background-color: var(--shop-panel-bg);
+  border-radius: var(--border-radius);
   backdrop-filter: blur(var(--shop-panel-blur));
   -webkit-backdrop-filter: blur(var(--shop-panel-blur));
-  border-bottom: solid 0.25px rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 0 0 0.3px rgba(255, 255, 255, 1);
   font-size: var(--font-size-xs);
   line-height: var(--line-height-xs);
   text-transform: uppercase;
@@ -100,18 +111,20 @@
 .page-shop-card-media {
   flex: 1;
   min-height: 0;
+  height: 0;
+  padding-bottom: 133%;
+  position: relative;
+  z-index: -1;
   background-color: #000;
 }
 
 .page-shop-card-media img {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.page-shop[data-shop-page='index'] .page-shop-card-media {
-  min-height: clamp(180px, 32vh, 420px);
 }
 
 .page-shop-empty {
@@ -169,7 +182,11 @@
 .page-shop-bottom-search-field {
   display: none;
   width: min(320px, 40vw);
+  color: var(--foreground-color);
+  background-color: var(--gray-color);
   text-transform: uppercase;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .page-shop-bottom.is-search-open .page-shop-bottom-search-btn {
@@ -177,7 +194,7 @@
 }
 
 .page-shop-bottom.is-search-open .page-shop-bottom-search-field {
-  display: inline-flex;
+  display: block;
 }
 
 .page-shop-bottom-search-field::placeholder {
@@ -511,46 +528,6 @@
 
 .page-shop-cart {
   padding-top: calc(var(--margin) + 48px);
-}
-
-.page-shop-cart::before {
-  display: none;
-}
-
-.page-shop-cart-bg {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.page-shop-cart-bg::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(
-      ellipse 80% 70% at 50% 45%,
-      rgba(0, 0, 0, 0.35) 0%,
-      rgba(0, 0, 0, 0.82) 55%,
-      rgba(0, 0, 0, 0.95) 100%
-    ),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.88) 100%);
-}
-
-.page-shop-cart-bg img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transform: scale(1.05);
-  filter: blur(2px) saturate(0.85);
-}
-
-.page-shop-cart-bg img:not([src]),
-.page-shop-cart-bg img[src=''] {
-  display: none;
 }
 
 .page-shop-cart .page-shop-shipping-link {

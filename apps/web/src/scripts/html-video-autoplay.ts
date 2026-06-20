@@ -29,6 +29,16 @@ function initMuteToggles(root: ParentNode): void {
   }
 }
 
+function isFixedBackgroundVideo(video: HTMLVideoElement): boolean {
+  return Boolean(video.closest('.page-about-bg'));
+}
+
+function playVideo(video: HTMLVideoElement): void {
+  void video.play().catch(() => {
+    /* autoplay blocked until user interaction */
+  });
+}
+
 export function initAutoplayVideos(root: ParentNode = document): void {
   const videos = root.querySelectorAll<HTMLVideoElement>('[data-autoplay-video]');
   if (!videos.length) {
@@ -52,14 +62,27 @@ export function initAutoplayVideos(root: ParentNode = document): void {
     return;
   }
 
+  const scrollVideos: HTMLVideoElement[] = [];
+
+  for (const video of videos) {
+    if (isFixedBackgroundVideo(video)) {
+      playVideo(video);
+      continue;
+    }
+
+    scrollVideos.push(video);
+  }
+
+  if (scrollVideos.length === 0) {
+    return;
+  }
+
   const observer = new IntersectionObserver(
     (entries) => {
       for (const entry of entries) {
         const video = entry.target as HTMLVideoElement;
         if (entry.isIntersecting) {
-          void video.play().catch(() => {
-            /* autoplay blocked */
-          });
+          playVideo(video);
         } else {
           video.pause();
         }
@@ -68,7 +91,7 @@ export function initAutoplayVideos(root: ParentNode = document): void {
     { threshold: 0.2 }
   );
 
-  for (const video of videos) {
+  for (const video of scrollVideos) {
     observer.observe(video);
   }
 }

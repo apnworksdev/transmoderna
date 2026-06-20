@@ -249,20 +249,6 @@ function updateCheckoutLinks(checkoutUrl?: string): void {
   });
 }
 
-function updateCartBackground(lines: CartLine[]): void {
-  const bgImage = document.querySelector<HTMLImageElement>('[data-cart-bg-image]');
-  if (!bgImage) return;
-
-  const imageUrl = lines.find((line) => line.merchandise.image?.url)?.merchandise.image?.url;
-  if (imageUrl) {
-    bgImage.src = imageUrl;
-    bgImage.hidden = false;
-  } else {
-    bgImage.removeAttribute('src');
-    bgImage.hidden = true;
-  }
-}
-
 function formatLinePrice(line: CartLine): string {
   const amount = parsePriceAmount(line.merchandise.price?.amount);
   if (typeof amount !== 'number') return '—';
@@ -324,14 +310,12 @@ function renderCartPage(root: HTMLElement, cart: CartData | null): void {
     setCartPageState(root, 'empty');
     if (subtotalEl) subtotalEl.textContent = '—';
     updateCheckoutLinks(undefined);
-    updateCartBackground([]);
     return;
   }
 
   setCartPageState(root, 'ready');
   if (subtotalEl) subtotalEl.textContent = formatSubtotal(cart);
   updateCheckoutLinks(cart.checkoutUrl);
-  updateCartBackground(lines);
 
   lines.forEach((line) => {
     const article = document.createElement('article');
