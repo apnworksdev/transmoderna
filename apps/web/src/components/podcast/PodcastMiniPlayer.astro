@@ -11,14 +11,37 @@ const { title } = Astro.props;
     <span class="podcast-mini-player__title">{title}</span>
     <span class="podcast-mini-player__elapsed" data-podcast-mini-elapsed>00:00:00</span>
 
-    <button
-      type="button"
-      class="podcast-mini-player__control"
-      data-podcast-mini-play-toggle
-      aria-label="Pause podcast"
-    >
-      ||
-    </button>
+    <div class="podcast-mini-player__controls">
+      <button
+        type="button"
+        class="podcast-mini-player__control podcast-mini-player__play"
+        data-podcast-mini-play-toggle
+        aria-label="Play podcast"
+      >
+        <svg class="podcast-mini-player__icon podcast-mini-player__icon--play" width="12" height="12" viewBox="0 0 10 10" aria-hidden="true">
+          <path d="M3.25 2.25L7.25 5L3.25 7.75V2.25Z" fill="currentColor"></path>
+        </svg>
+        <svg class="podcast-mini-player__icon podcast-mini-player__icon--pause" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+          <rect x="2.75" y="2.25" width="1.5" height="5.5" fill="currentColor"></rect>
+          <rect x="5.75" y="2.25" width="1.5" height="5.5" fill="currentColor"></rect>
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="podcast-mini-player__control podcast-mini-player__mute"
+        data-podcast-mini-mute-toggle
+        aria-label="Mute podcast"
+      >
+        <svg class="podcast-mini-player__icon" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+          <path d="M1.75 3.5H3L5.75 1.5V8.5L3 6.5H1.75V3.5Z" fill="currentColor"></path>
+        </svg>
+      </button>
+      <a class="podcast-mini-player__control podcast-mini-player__close" href="/podcasts" aria-label="Close player">
+        <svg class="podcast-mini-player__icon" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+          <path d="M2.5 2.5L7.5 7.5M7.5 2.5L2.5 7.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"></path>
+        </svg>
+      </a>
+    </div>
   </div>
 
   <span class="podcast-mini-player__progress-track">

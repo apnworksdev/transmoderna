@@ -17,7 +17,7 @@ function setMuteToggleLabel(button: HTMLButtonElement, isMuted: boolean): void {
 }
 
 function setMiniPlayToggleLabel(button: HTMLButtonElement, isPlaying: boolean): void {
-  button.textContent = isPlaying ? '||' : '▶';
+  button.classList.toggle('is-playing', isPlaying);
   button.setAttribute('aria-label', isPlaying ? 'Pause podcast' : 'Play podcast');
 }
 
@@ -39,6 +39,7 @@ export function initPodcastsPlayer(root: ParentNode = document): PlayerCleanup |
   const miniPlayer = playerRoot.querySelector<HTMLElement>('[data-podcast-mini]');
   const miniElapsed = miniPlayer?.querySelector<HTMLElement>('[data-podcast-mini-elapsed]');
   const miniPlayToggle = miniPlayer?.querySelector<HTMLButtonElement>('[data-podcast-mini-play-toggle]');
+  const miniMuteToggle = miniPlayer?.querySelector<HTMLButtonElement>('[data-podcast-mini-mute-toggle]');
   const miniProgressFill = miniPlayer?.querySelector<HTMLElement>('[data-podcast-mini-progress-fill]');
   const shareButton = playerRoot.querySelector<HTMLButtonElement>('[data-podcast-share]');
 
@@ -322,6 +323,11 @@ export function initPodcastsPlayer(root: ParentNode = document): PlayerCleanup |
     };
     miniPlayToggle.addEventListener('click', onMiniPlayToggle);
     playToggleHandlers.push(() => miniPlayToggle.removeEventListener('click', onMiniPlayToggle));
+  }
+
+  if (miniMuteToggle) {
+    miniMuteToggle.addEventListener('click', onMuteToggleClick);
+    playToggleHandlers.push(() => miniMuteToggle.removeEventListener('click', onMuteToggleClick));
   }
 
   if (shareButton) {

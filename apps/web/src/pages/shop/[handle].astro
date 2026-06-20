@@ -1,12 +1,10 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ProductBuy from '../../components/shop/ProductBuy.astro';
+import ShopBottomBar from '../../components/shop/ShopBottomBar.astro';
 import ShopProductToolbar from '../../components/shop/ShopProductToolbar.astro';
 import { getShopProductByHandle, productHandle, productImageUrl } from '../../lib/shop';
-import {
-  fetchProductMediaByHandle,
-  fetchProductVariantsByHandle
-} from '../../lib/shopify-storefront';
+import { fetchProductStorefrontDataByHandle } from '../../lib/shopify-storefront';
 import '../../styles/pages/shop.css';
 
 export const prerender = false;
@@ -24,11 +22,11 @@ if (!product) {
 const title = product.store?.title ?? 'Product';
 const slug = productHandle(product) ?? handle;
 const fallbackImage = productImageUrl(product);
-const media = await fetchProductMediaByHandle(slug);
-const variants = await fetchProductVariantsByHandle(slug);
+const storefront = await fetchProductStorefrontDataByHandle(slug);
+const variants = storefront?.variants ?? [];
 const images =
-  media?.images.length
-    ? media.images
+  storefront?.images.length
+    ? storefront.images
     : fallbackImage
       ? [{ url: fallbackImage, altText: title }]
       : [];
@@ -37,6 +35,11 @@ const imagesJson = JSON.stringify(images);
 const shopifyDomain = import.meta.env.PUBLIC_SHOPIFY_DOMAIN ?? '';
 const storefrontToken = import.meta.env.PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN ?? '';
 const marketCountry = import.meta.env.PUBLIC_SHOPIFY_MARKET_COUNTRY ?? '';
+
+Astro.response.headers.set(
+  'Cache-Control',
+  'public, s-maxage=60, stale-while-revalidate=300'
+);
 ---
 
 <BaseLayout title={`${title} — Shop — Transmoderna`} hideSiteHeader>
@@ -49,6 +52,7 @@ const marketCountry = import.meta.env.PUBLIC_SHOPIFY_MARKET_COUNTRY ?? '';
     data-market-country={marketCountry}
     data-product-handle={slug}
     data-product-images={imagesJson}
+    data-variants-truncated={storefront?.variantsTruncated ? 'true' : 'false'}
   >
     <ShopProductToolbar title={title} />
 
@@ -59,7 +63,7 @@ const marketCountry = import.meta.env.PUBLIC_SHOPIFY_MARKET_COUNTRY ?? '';
       ]}
     >
       <div class="page-shop-product-panel">
-        <ProductBuy product={product} variants={variants} options={media?.options} />
+        <ProductBuy product={product} variants={variants} options={storefront?.options} />
       </div>
 
       {
@@ -94,5 +98,7 @@ const marketCountry = import.meta.env.PUBLIC_SHOPIFY_MARKET_COUNTRY ?? '';
         }
       </div>
     </div>
+
+    <ShopBottomBar />
   </main>
 </BaseLayout>

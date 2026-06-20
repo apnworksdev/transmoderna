@@ -120,20 +120,29 @@ function filterProducts(products: ShopProduct[] | null | undefined): ShopProduct
   });
 }
 
+const SHOP_CACHE_TTL_MS = 60_000;
+
+type ShopCacheEntry = {
+  expiresAt: number;
+  value: ShopPageData | null;
+};
+
+let shopPageCache: ShopCacheEntry | null = null;
+
 export async function getAllShopProducts(): Promise<ShopProduct[]> {
-  const client = getShopSanityClient();
-  if (!client) {
-    return [];
-  }
-  const products = await client.fetch<ShopProduct[]>(
-    `*[_type == "product" && coalesce(store.isDeleted, false) != true && coalesce(store.status, "active") == "active"] | order(store.title asc) ${productFields}`
-  );
-  return filterProducts(products);
+  const page = await getShopPage();
+  return page?.products ?? [];
 }
 
 export async function getShopPage(): Promise<ShopPageData | null> {
+  const now = Date.now();
+  if (shopPageCache && shopPageCache.expiresAt > now) {
+    return shopPageCache.value;
+  }
+
   const client = getShopSanityClient();
   if (!client) {
+    shopPageCache = { expiresAt: now + SHOP_CACHE_TTL_MS, value: null };
     return null;
   }
 
@@ -148,13 +157,21 @@ export async function getShopPage(): Promise<ShopPageData | null> {
     { id: SHOP_DOCUMENT_ID }
   );
 
-  const curated = filterProducts(doc?.products);
-  const products = curated.length > 0 ? curated : await getAllShopProducts();
+  let products = filterProducts(doc?.products);
+  if (products.length === 0) {
+    const allProducts = await client.fetch<ShopProduct[]>(
+      `*[_type == "product" && coalesce(store.isDeleted, false) != true && coalesce(store.status, "active") == "active"] | order(store.title asc) ${productFields}`
+    );
+    products = filterProducts(allProducts);
+  }
 
-  return {
+  const value: ShopPageData = {
     intro: doc?.intro,
     products
   };
+
+  shopPageCache = { expiresAt: now + SHOP_CACHE_TTL_MS, value };
+  return value;
 }
 
 export async function getShopProductByHandle(handle: string): Promise<ShopProduct | null> {
@@ -213,4 +230,30 @@ export function variantAvailable(variant: ShopVariant): boolean {
     return false;
   }
   return variant.store?.inventory?.isAvailable !== false;
+}
+
+/** Lowercase text used for client-side shop search matching. */
+export function productSearchText(product: ShopProduct): string {
+  const parts: string[] = [];
+  const title = product.store?.title?.trim();
+  if (title) parts.push(title);
+
+  const tags = product.store?.tags?.trim();
+  if (tags) parts.push(tags);
+
+  for (const variant of product.store?.variants ?? []) {
+    parts.push(variantTitle(variant));
+    for (const option of [
+      variant.store?.option1,
+      variant.store?.option2,
+      variant.store?.option3,
+      variant.store?.title
+    ]) {
+      if (typeof option === 'string' && option.trim()) {
+        parts.push(option.trim());
+      }
+    }
+  }
+
+  return parts.join(' ').toLowerCase();
 }

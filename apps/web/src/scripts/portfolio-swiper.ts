@@ -83,6 +83,23 @@ function transformForSlotOffset(offset: number): string {
   return SLOT_TRANSFORMS[offset] ?? SLOT_TRANSFORMS[0];
 }
 
+function dimForSlotOffset(offset: number): string {
+  const distance = Math.min(Math.abs(offset), 4);
+  if (distance === 0) {
+    return 'var(--portfolio-dim-center)';
+  }
+  if (distance === 1) {
+    return 'var(--portfolio-dim-1)';
+  }
+  if (distance === 2) {
+    return 'var(--portfolio-dim-2)';
+  }
+  if (distance === 3) {
+    return 'var(--portfolio-dim-3)';
+  }
+  return 'var(--portfolio-dim-4)';
+}
+
 function setFigureWidth(figure: HTMLElement | null, isCenter: boolean) {
   if (!figure) {
     return;
@@ -90,7 +107,52 @@ function setFigureWidth(figure: HTMLElement | null, isCenter: boolean) {
   figure.style.width = isCenter ? 'var(--portfolio-center-w)' : 'var(--portfolio-pill-w)';
 }
 
+function setFigureDim(figure: HTMLElement | null, offset: number) {
+  if (!figure) {
+    return;
+  }
+  figure.style.setProperty('--portfolio-dim', dimForSlotOffset(offset));
+}
+
+export function resetPortfolioSwiperDom(root: ParentNode = document): void {
+  const swiperRoot = root.querySelector<HTMLElement>('[data-portfolio-swiper]');
+  if (!swiperRoot) {
+    return;
+  }
+
+  swiperRoot.classList.remove(
+    'is-entering-next',
+    'is-entering-prev',
+    'is-animating-next',
+    'is-animating-prev',
+    'is-jump-prep',
+    'is-jumping',
+    'is-resetting'
+  );
+
+  swiperRoot.querySelectorAll<HTMLElement>('[data-portfolio-slot]').forEach((slot) => {
+    slot.style.transform = '';
+    slot.style.zIndex = '';
+    slot.classList.remove('is-jump-target');
+
+    const figure = slot.querySelector<HTMLElement>('.page-portfolio-slide-figure');
+    if (figure) {
+      figure.style.width = '';
+      figure.style.opacity = '';
+      figure.style.transform = '';
+      figure.style.removeProperty('--portfolio-dim');
+    }
+
+    if (slot.classList.contains('page-portfolio-slide--enter')) {
+      slot.hidden = true;
+      slot.setAttribute('aria-hidden', 'true');
+    }
+  });
+}
+
 export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup | null {
+  resetPortfolioSwiperDom(root);
+
   const swiperRoot = root.querySelector<HTMLElement>('[data-portfolio-swiper]');
   if (!swiperRoot) {
     return null;
@@ -240,6 +302,9 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
       const figure = slot.querySelector<HTMLElement>('.page-portfolio-slide-figure');
       if (figure) {
         figure.style.width = '';
+        figure.style.opacity = '';
+        figure.style.transform = '';
+        figure.style.removeProperty('--portfolio-dim');
       }
     }
 
@@ -254,7 +319,9 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
     slot.style.transform = transformForSlotOffset(endOffset);
     slot.style.zIndex = options.zIndex ?? (endOffset === 0 ? '6' : '');
     slot.classList.toggle('is-jump-target', options.isCenter ?? endOffset === 0);
-    setFigureWidth(slot.querySelector<HTMLElement>('.page-portfolio-slide-figure'), endOffset === 0);
+    const figure = slot.querySelector<HTMLElement>('.page-portfolio-slide-figure');
+    setFigureWidth(figure, endOffset === 0);
+    setFigureDim(figure, endOffset);
   };
 
   const applyJumpEndStyles = (steps: number, direction: 'next' | 'prev') => {
@@ -472,18 +539,5 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
 }
 
 export function destroyPortfolioSwiper(root: ParentNode = document): void {
-  const swiperRoot = root.querySelector<HTMLElement>('[data-portfolio-swiper]');
-  if (!swiperRoot) {
-    return;
-  }
-
-  swiperRoot.classList.remove(
-    'is-entering-next',
-    'is-entering-prev',
-    'is-animating-next',
-    'is-animating-prev',
-    'is-jump-prep',
-    'is-jumping',
-    'is-resetting'
-  );
+  resetPortfolioSwiperDom(root);
 }

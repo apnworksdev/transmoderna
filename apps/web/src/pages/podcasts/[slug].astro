@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PodcastMiniPlayer from '../../components/podcast/PodcastMiniPlayer.astro';
 import PodcastPlayerBar from '../../components/podcast/PodcastPlayerBar.astro';
+import ContentFadeOverlay from '../../components/ContentFadeOverlay.astro';
 import {
   getPodcastBySlug,
   getPodcastsPage,
@@ -51,13 +52,14 @@ const pageTitle = podcast.title ? `${podcast.title} — Transmoderna` : 'Podcast
       <audio data-podcast-audio preload="none"></audio>
 
       <div class="page-podcasts-single-toolbar">
-        <a class="page-podcasts-single-close site-header-pill" href="/podcasts">CLOSE</a>
+        <a class="page-podcasts-single-close" href="/podcasts">CLOSE</a>
       </div>
 
       <div class="page-podcasts-single-player">
         <PodcastPlayerBar podcast={podcast} variant="detail" />
       </div>
 
+      <ContentFadeOverlay />
       <PodcastMiniPlayer title={podcast.title ?? 'Podcast'} />
     </div>
   </main>

@@ -1,0 +1,50 @@
+.content-fade-overlay {
+  --content-fade-color: var(--background-color);
+  --content-fade-z-index: 2;
+
+  left: 0;
+  right: 0;
+  z-index: var(--content-fade-z-index);
+  height: var(--content-fade-height);
+  pointer-events: none;
+}
+
+.content-fade-overlay--fixed {
+  position: fixed;
+}
+
+.content-fade-overlay--absolute {
+  position: absolute;
+}
+
+.content-fade-overlay--bottom.content-fade-overlay--fixed {
+  bottom: 0;
+}
+
+.content-fade-overlay--bottom.content-fade-overlay--absolute {
+  bottom: 0;
+}
+
+.content-fade-overlay--top.content-fade-overlay--fixed {
+  top: 0;
+}
+
+.content-fade-overlay--top.content-fade-overlay--absolute {
+  top: 0;
+}
+
+.content-fade-overlay--bottom {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    var(--content-fade-color) 100%
+  );
+}
+
+.content-fade-overlay--top {
+  background: linear-gradient(
+    180deg,
+    var(--content-fade-color) 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}

@@ -157,6 +157,7 @@ export type PodcastDocument = {
   slug?: { current?: string };
   publishDate?: string;
   audioFileUrl?: string;
+  playerBackgroundImage?: SanityImageWithAlt;
   sortOrder?: number;
 };
 
@@ -634,7 +635,8 @@ const podcastDocumentProjection = `{
   slug,
   publishDate,
   sortOrder,
-  "audioFileUrl": audioFile.asset->url
+  "audioFileUrl": audioFile.asset->url,
+  playerBackgroundImage { ..., alt, asset->{ url, mimeType } }
 }`;
 
 export function formatPodcastNumber(number: number | null | undefined): string {

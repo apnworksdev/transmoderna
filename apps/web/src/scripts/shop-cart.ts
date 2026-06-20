@@ -1,5 +1,6 @@
-import { formatEurPrice, parsePriceAmount } from '../lib/shop-format';
-import { getSelectedQuantity } from './shop-product';
+import { CART_LINES_FIRST } from '../lib/shopify-storefront';
+import { formatPrice, parsePriceAmount } from '../lib/shop-format';
+import { getSelectedQuantity, getSelectedVariantId, refreshProductBuyUI } from './shop-product';
 
 const API_VERSION = '2024-01';
 const CART_KEY = 'transmoderna_shopify_cart_id';
@@ -29,13 +30,23 @@ type CartData = {
   };
 };
 
+type StorefrontConfig = {
+  endpoint: string;
+  token: string;
+  marketCountry: string;
+};
+
 function getShopRoot(): HTMLElement | null {
   return document.querySelector('[data-shop-root]');
 }
 
-function readConfig(root: HTMLElement) {
+function readConfig(root: HTMLElement): StorefrontConfig & {
+  handle: string;
+  page: string;
+} {
+  const domain = root.dataset.shopifyDomain ?? '';
   return {
-    domain: root.dataset.shopifyDomain ?? '',
+    endpoint: `https://${domain}/api/${API_VERSION}/graphql.json`,
     token: root.dataset.storefrontToken ?? '',
     marketCountry: root.dataset.marketCountry ?? '',
     handle: root.dataset.productHandle ?? '',
@@ -43,25 +54,74 @@ function readConfig(root: HTMLElement) {
   };
 }
 
+function inContextDirective(marketCountry: string): string {
+  return marketCountry ? '@inContext(country: $country)' : '';
+}
+
+function withCountryVariables(
+  marketCountry: string,
+  variables?: Record<string, unknown>
+): Record<string, unknown> | undefined {
+  if (!marketCountry) return variables;
+  return { ...(variables ?? {}), country: marketCountry };
+}
+
+type StorefrontResponse = {
+  data?: Record<string, unknown>;
+  errors?: Array<{ message?: string }>;
+};
+
+function mutationUserErrors(data: Record<string, unknown> | undefined, field: string): string[] {
+  const payload = data?.[field] as { userErrors?: Array<{ message?: string }> } | undefined;
+  return (payload?.userErrors ?? [])
+    .map((error) => error.message?.trim())
+    .filter((message): message is string => Boolean(message));
+}
+
 async function storefrontFetch(
-  endpoint: string,
-  token: string,
+  config: StorefrontConfig,
   query: string,
   variables?: Record<string, unknown>
-) {
-  const res = await fetch(endpoint, {
+): Promise<Record<string, unknown>> {
+  const res = await fetch(config.endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Shopify-Storefront-Access-Token': token
+      'X-Shopify-Storefront-Access-Token': config.token
     },
-    body: JSON.stringify({ query, variables })
+    body: JSON.stringify({
+      query,
+      variables: withCountryVariables(config.marketCountry, variables)
+    })
   });
-  const json = await res.json();
+
+  if (!res.ok) {
+    throw new Error(`Shopify Storefront HTTP ${res.status}`);
+  }
+
+  let json: StorefrontResponse;
+  try {
+    json = (await res.json()) as StorefrontResponse;
+  } catch {
+    throw new Error('Invalid Shopify Storefront response');
+  }
+
   if (json.errors?.length) {
     throw new Error(json.errors[0]?.message ?? 'Shopify error');
   }
+
+  if (!json.data) {
+    throw new Error('Empty Shopify Storefront response');
+  }
+
   return json.data;
+}
+
+function assertNoUserErrors(data: Record<string, unknown>, field: string): void {
+  const messages = mutationUserErrors(data, field);
+  if (messages.length > 0) {
+    throw new Error(messages.join(' '));
+  }
 }
 
 const CART_FRAGMENT = `
@@ -71,7 +131,7 @@ const CART_FRAGMENT = `
   cost {
     subtotalAmount { amount currencyCode }
   }
-  lines(first: 50) {
+  lines(first: ${CART_LINES_FIRST}) {
     edges {
       node {
         id
@@ -91,22 +151,77 @@ const CART_FRAGMENT = `
   }
 `;
 
-async function resolveVariantGid(handle: string): Promise<string | undefined> {
-  const selected = document.querySelector<HTMLInputElement>('[data-variant-radio]:checked');
-  if (selected?.dataset.variantId) {
-    return selected.dataset.variantId;
+function cartGetQuery(marketCountry: string): string {
+  if (marketCountry) {
+    return `query CartGet($id: ID!, $country: CountryCode!) ${inContextDirective(marketCountry)} {
+      cart(id: $id) { ${CART_FRAGMENT} }
+    }`;
   }
+  return `query CartGet($id: ID!) { cart(id: $id) { ${CART_FRAGMENT} } }`;
+}
 
-  const res = await fetch(`/api/product-variants?handle=${encodeURIComponent(handle)}`);
-  const json = await res.json();
-  if (!json.success || !Array.isArray(json.variants)) {
-    return undefined;
+function cartCreateMutation(marketCountry: string): string {
+  if (marketCountry) {
+    return `mutation CartCreate($country: CountryCode!) ${inContextDirective(marketCountry)} {
+      cartCreate { cart { ${CART_FRAGMENT} } userErrors { message } }
+    }`;
   }
-  const title = selected?.dataset.variantTitle;
-  const match = json.variants.find(
-    (v: { id: string; title: string }) => !title || v.title === title
-  );
-  return match?.id ?? json.variants[0]?.id;
+  return `mutation { cartCreate { cart { ${CART_FRAGMENT} } userErrors { message } } }`;
+}
+
+function cartLinesAddMutation(marketCountry: string): string {
+  if (marketCountry) {
+    return `mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!, $country: CountryCode!) ${inContextDirective(marketCountry)} {
+      cartLinesAdd(cartId: $cartId, lines: $lines) {
+        cart { ${CART_FRAGMENT} }
+        userErrors { message field code }
+      }
+    }`;
+  }
+  return `mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
+    cartLinesAdd(cartId: $cartId, lines: $lines) {
+      cart { ${CART_FRAGMENT} }
+      userErrors { message field code }
+    }
+  }`;
+}
+
+function cartLinesUpdateMutation(marketCountry: string): string {
+  if (marketCountry) {
+    return `mutation CartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!, $country: CountryCode!) ${inContextDirective(marketCountry)} {
+      cartLinesUpdate(cartId: $cartId, lines: $lines) {
+        cart { ${CART_FRAGMENT} }
+        userErrors { message field code }
+      }
+    }`;
+  }
+  return `mutation CartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
+    cartLinesUpdate(cartId: $cartId, lines: $lines) {
+      cart { ${CART_FRAGMENT} }
+      userErrors { message field code }
+    }
+  }`;
+}
+
+function cartLinesRemoveMutation(marketCountry: string): string {
+  if (marketCountry) {
+    return `mutation CartLinesRemove($cartId: ID!, $lineIds: [ID!]!, $country: CountryCode!) ${inContextDirective(marketCountry)} {
+      cartLinesRemove(cartId: $cartId, lineIds: $lineIds) {
+        cart { ${CART_FRAGMENT} }
+        userErrors { message field code }
+      }
+    }`;
+  }
+  return `mutation CartLinesRemove($cartId: ID!, $lineIds: [ID!]!) {
+    cartLinesRemove(cartId: $cartId, lineIds: $lineIds) {
+      cart { ${CART_FRAGMENT} }
+      userErrors { message field code }
+    }
+  }`;
+}
+
+function resolveVariantGid(root: HTMLElement): string | undefined {
+  return getSelectedVariantId(root);
 }
 
 function updateCartBadge(totalQuantity?: number): void {
@@ -151,12 +266,13 @@ function updateCartBackground(lines: CartLine[]): void {
 function formatLinePrice(line: CartLine): string {
   const amount = parsePriceAmount(line.merchandise.price?.amount);
   if (typeof amount !== 'number') return '—';
-  return formatEurPrice(amount * line.quantity);
+  return formatPrice(amount * line.quantity, line.merchandise.price?.currencyCode ?? 'EUR');
 }
 
 function formatSubtotal(cart: CartData): string {
   const amount = parsePriceAmount(cart.cost?.subtotalAmount?.amount);
-  return typeof amount === 'number' ? formatEurPrice(amount) : '—';
+  const currency = cart.cost?.subtotalAmount?.currencyCode ?? 'EUR';
+  return typeof amount === 'number' ? formatPrice(amount, currency) : '—';
 }
 
 function primaryOptionBadge(line: CartLine): string {
@@ -173,9 +289,26 @@ function escapeHtml(value: string): string {
     .replaceAll('"', '&quot;');
 }
 
-function renderCartPage(root: HTMLElement, cart: CartData | null): void {
+function setCartPageState(
+  root: HTMLElement,
+  state: 'loading' | 'empty' | 'ready' | 'error',
+  message?: string
+): void {
   const layout = root.querySelector<HTMLElement>('[data-cart-layout]');
   const emptyEl = root.querySelector<HTMLElement>('[data-cart-empty]');
+  const errorEl = root.querySelector<HTMLElement>('[data-cart-error]');
+
+  if (layout) layout.hidden = state !== 'ready';
+  if (emptyEl) emptyEl.hidden = state !== 'empty';
+  if (errorEl) {
+    errorEl.hidden = state !== 'error';
+    if (state === 'error' && message) {
+      errorEl.textContent = message;
+    }
+  }
+}
+
+function renderCartPage(root: HTMLElement, cart: CartData | null): void {
   const linesEl = root.querySelector<HTMLElement>('[data-cart-lines]');
   const subtotalEl = root.querySelector<HTMLElement>('[data-cart-subtotal]');
 
@@ -183,21 +316,19 @@ function renderCartPage(root: HTMLElement, cart: CartData | null): void {
     .map((edge) => edge.node)
     .filter((node): node is CartLine => Boolean(node?.id));
 
-  if (!linesEl || !layout || !emptyEl) return;
+  if (!linesEl) return;
 
   linesEl.innerHTML = '';
 
   if (!cart || lines.length === 0) {
-    layout.hidden = true;
-    emptyEl.hidden = false;
+    setCartPageState(root, 'empty');
     if (subtotalEl) subtotalEl.textContent = '—';
     updateCheckoutLinks(undefined);
     updateCartBackground([]);
     return;
   }
 
-  layout.hidden = false;
-  emptyEl.hidden = true;
+  setCartPageState(root, 'ready');
   if (subtotalEl) subtotalEl.textContent = formatSubtotal(cart);
   updateCheckoutLinks(cart.checkoutUrl);
   updateCartBackground(lines);
@@ -242,105 +373,121 @@ function renderCartPage(root: HTMLElement, cart: CartData | null): void {
 }
 
 let cleanup: (() => void) | null = null;
-let cartContext: {
-  endpoint: string;
-  token: string;
-  root: HTMLElement;
-} | null = null;
+let cartContext: (StorefrontConfig & { root: HTMLElement }) | null = null;
+let cartCreatePromise: Promise<CartData> | null = null;
+let cartMutationInFlight = false;
 
-async function getOrCreateCart(endpoint: string, token: string): Promise<CartData> {
-  const existing = localStorage.getItem(CART_KEY);
-  if (existing) {
-    try {
-      const data = await storefrontFetch(
-        endpoint,
-        token,
-        `query CartGet($id: ID!) { cart(id: $id) { ${CART_FRAGMENT} } }`,
-        { id: existing }
-      );
-      if (data?.cart?.id) return data.cart as CartData;
-    } catch {
-      localStorage.removeItem(CART_KEY);
-    }
+async function getOrCreateCart(config: StorefrontConfig): Promise<CartData> {
+  if (cartCreatePromise) {
+    return cartCreatePromise;
   }
 
-  const data = await storefrontFetch(
-    endpoint,
-    token,
-    `mutation { cartCreate { cart { ${CART_FRAGMENT} } userErrors { message } } }`
-  );
-  const cart = data?.cartCreate?.cart as CartData | undefined;
-  if (!cart?.id) throw new Error('Failed to create cart');
-  localStorage.setItem(CART_KEY, cart.id);
-  return cart;
+  cartCreatePromise = (async () => {
+    const existing = localStorage.getItem(CART_KEY);
+    if (existing) {
+      try {
+        const data = await storefrontFetch(config, cartGetQuery(config.marketCountry), { id: existing });
+        if (data?.cart && (data.cart as CartData).id) {
+          return data.cart as CartData;
+        }
+      } catch {
+        localStorage.removeItem(CART_KEY);
+      }
+    }
+
+    const data = await storefrontFetch(config, cartCreateMutation(config.marketCountry));
+    assertNoUserErrors(data, 'cartCreate');
+    const cart = data?.cartCreate as { cart?: CartData } | undefined;
+    if (!cart?.cart?.id) throw new Error('Failed to create cart');
+    localStorage.setItem(CART_KEY, cart.cart.id);
+    return cart.cart;
+  })();
+
+  try {
+    return await cartCreatePromise;
+  } finally {
+    cartCreatePromise = null;
+  }
 }
 
-async function fetchCart(endpoint: string, token: string): Promise<CartData | null> {
+async function fetchCart(config: StorefrontConfig): Promise<CartData | null> {
   const existing = localStorage.getItem(CART_KEY);
   if (!existing) return null;
 
-  const data = await storefrontFetch(
-    endpoint,
-    token,
-    `query CartGet($id: ID!) { cart(id: $id) { ${CART_FRAGMENT} } }`,
-    { id: existing }
-  );
-
+  const data = await storefrontFetch(config, cartGetQuery(config.marketCountry), { id: existing });
   return (data?.cart as CartData | null) ?? null;
 }
 
 async function refreshCartUI(): Promise<void> {
   if (!cartContext) return;
 
-  const { endpoint, token, root } = cartContext;
-  const cart = await fetchCart(endpoint, token);
-  updateCartBadge(cart?.totalQuantity);
-  updateCheckoutLinks(cart?.checkoutUrl);
+  const { root, ...config } = cartContext;
 
-  if (root.dataset.shopPage === 'cart') {
-    renderCartPage(root, cart);
+  try {
+    const cart = await fetchCart(config);
+    updateCartBadge(cart?.totalQuantity);
+    updateCheckoutLinks(cart?.checkoutUrl);
+
+    if (root.dataset.shopPage === 'cart') {
+      renderCartPage(root, cart);
+    }
+  } catch (error) {
+    console.error('[shop-cart]', error);
+    if (root.dataset.shopPage === 'cart') {
+      setCartPageState(
+        root,
+        'error',
+        'Could not load your cart. Please refresh and try again.'
+      );
+    }
   }
 }
 
 async function updateLineQuantity(lineId: string, quantity: number): Promise<void> {
-  if (!cartContext) return;
-  const { endpoint, token } = cartContext;
+  if (!cartContext || cartMutationInFlight) return;
+
+  const { ...config } = cartContext;
   const cartId = localStorage.getItem(CART_KEY);
   if (!cartId) return;
 
-  if (quantity <= 0) {
-    await storefrontFetch(
-      endpoint,
-      token,
-      `mutation CartLinesRemove($cartId: ID!, $lineIds: [ID!]!) {
-        cartLinesRemove(cartId: $cartId, lineIds: $lineIds) {
-          cart { ${CART_FRAGMENT} }
-          userErrors { message }
-        }
-      }`,
-      { cartId, lineIds: [lineId] }
-    );
-  } else {
-    await storefrontFetch(
-      endpoint,
-      token,
-      `mutation CartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
-        cartLinesUpdate(cartId: $cartId, lines: $lines) {
-          cart { ${CART_FRAGMENT} }
-          userErrors { message }
-        }
-      }`,
-      { cartId, lines: [{ id: lineId, quantity }] }
-    );
-  }
+  cartMutationInFlight = true;
 
-  await refreshCartUI();
+  try {
+    if (quantity <= 0) {
+      const data = await storefrontFetch(config, cartLinesRemoveMutation(config.marketCountry), {
+        cartId,
+        lineIds: [lineId]
+      });
+      assertNoUserErrors(data, 'cartLinesRemove');
+    } else {
+      const data = await storefrontFetch(config, cartLinesUpdateMutation(config.marketCountry), {
+        cartId,
+        lines: [{ id: lineId, quantity }]
+      });
+      assertNoUserErrors(data, 'cartLinesUpdate');
+    }
+
+    await refreshCartUI();
+  } catch (error) {
+    console.error('[shop-cart]', error);
+    if (cartContext.root.dataset.shopPage === 'cart') {
+      setCartPageState(
+        cartContext.root,
+        'error',
+        error instanceof Error ? error.message : 'Could not update cart.'
+      );
+    }
+  } finally {
+    cartMutationInFlight = false;
+  }
 }
 
 export function destroyShopCart(): void {
   cleanup?.();
   cleanup = null;
   cartContext = null;
+  cartCreatePromise = null;
+  cartMutationInFlight = false;
 }
 
 export function initShopCart(): (() => void) | null {
@@ -349,47 +496,40 @@ export function initShopCart(): (() => void) | null {
   const root = getShopRoot();
   if (!root) return null;
 
-  const { domain, token, handle, page } = readConfig(root);
-  if (!domain || !token) return null;
+  const config = readConfig(root);
+  if (!config.token || !config.endpoint.includes('://')) return null;
 
-  const endpoint = `https://${domain}/api/${API_VERSION}/graphql.json`;
-  cartContext = { endpoint, token, root };
+  cartContext = { ...config, root };
+
+  if (root.dataset.shopPage === 'cart') {
+    setCartPageState(root, 'loading');
+  }
 
   const listeners: Array<() => void> = [];
 
   root.querySelectorAll('[data-add-to-cart]').forEach((btn) => {
     const onClick = async (event: Event) => {
       event.preventDefault();
-      if (!(btn instanceof HTMLButtonElement)) return;
-
-      const productHandle =
-        handle || btn.closest('[data-shop-root]')?.getAttribute('data-product-handle');
-      if (!productHandle) return;
+      if (!(btn instanceof HTMLButtonElement) || btn.disabled) return;
 
       const statusEl = root.querySelector('[data-add-status]');
-      const prev = btn.textContent;
+      const prev = btn.dataset.defaultLabel ?? btn.textContent ?? 'Add to cart';
       btn.disabled = true;
       btn.textContent = 'Adding…';
 
       try {
-        const merchandiseId = await resolveVariantGid(productHandle);
-        if (!merchandiseId) throw new Error('No variant');
+        const merchandiseId = resolveVariantGid(root);
+        if (!merchandiseId) throw new Error('Select a valid variant');
 
         const quantity = getSelectedQuantity(root);
-        const cart = await getOrCreateCart(endpoint, token);
-        const data = await storefrontFetch(
-          endpoint,
-          token,
-          `mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
-            cartLinesAdd(cartId: $cartId, lines: $lines) {
-              cart { ${CART_FRAGMENT} }
-              userErrors { message }
-            }
-          }`,
-          { cartId: cart.id, lines: [{ merchandiseId, quantity }] }
-        );
+        const cart = await getOrCreateCart(config);
+        const data = await storefrontFetch(config, cartLinesAddMutation(config.marketCountry), {
+          cartId: cart.id,
+          lines: [{ merchandiseId, quantity }]
+        });
+        assertNoUserErrors(data, 'cartLinesAdd');
 
-        const updated = data?.cartLinesAdd?.cart as CartData | undefined;
+        const updated = (data.cartLinesAdd as { cart?: CartData } | undefined)?.cart;
         updateCartBadge(updated?.totalQuantity);
         updateCheckoutLinks(updated?.checkoutUrl);
         if (statusEl) statusEl.textContent = 'Added to cart';
@@ -397,35 +537,22 @@ export function initShopCart(): (() => void) | null {
       } catch (err) {
         console.error('[shop-cart]', err);
         btn.textContent = 'Error';
-        if (statusEl) statusEl.textContent = 'Could not add to cart.';
+        if (statusEl) {
+          statusEl.textContent =
+            err instanceof Error ? err.message : 'Could not add to cart.';
+        }
       } finally {
         setTimeout(() => {
-          const variant = document.querySelector<HTMLInputElement>('[data-variant-radio]:checked');
-          btn.disabled = !variant || variant.disabled;
-          btn.textContent = prev ?? 'Add to cart';
+          refreshProductBuyUI(root);
+          if (btn.textContent === 'Adding…' || btn.textContent === 'Added' || btn.textContent === 'Error') {
+            btn.textContent = prev;
+          }
         }, 1200);
       }
     };
 
     btn.addEventListener('click', onClick);
     listeners.push(() => btn.removeEventListener('click', onClick));
-  });
-
-  root.querySelectorAll('[data-variant-radio]').forEach((radio) => {
-    const onChange = () => {
-      const card = radio.closest('[data-product-buy]');
-      const priceEl = card?.querySelector('[data-variant-price]');
-      const input = radio as HTMLInputElement;
-      const amount = input.dataset.price;
-      if (priceEl && amount) {
-        const parsed = parsePriceAmount(amount);
-        priceEl.textContent =
-          typeof parsed === 'number' ? formatEurPrice(parsed) : amount;
-      }
-    };
-
-    radio.addEventListener('change', onChange);
-    listeners.push(() => radio.removeEventListener('change', onChange));
   });
 
   const onRootClick = async (event: Event) => {

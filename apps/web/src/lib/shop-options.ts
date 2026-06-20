@@ -5,6 +5,13 @@ export type ProductOption = {
   values: string[];
 };
 
+export type SelectableVariant = {
+  id: string;
+  title?: string;
+  availableForSale: boolean;
+  selectedOptions?: Array<{ name: string; value: string }>;
+};
+
 export function isDefaultTitleOption(name: string, values: string[]): boolean {
   return name === 'Title' && values.length === 1 && values[0] === 'Default Title';
 }
@@ -79,14 +86,37 @@ export function getInitialOptionSelections(
 }
 
 export function findVariantBySelections(
-  variants: StorefrontVariant[],
+  variants: SelectableVariant[],
   selections: Map<string, string>
-): StorefrontVariant | undefined {
+): SelectableVariant | undefined {
   return variants.find((variant) => variantMatchesSelections(variant, selections, true));
 }
 
+export function findDisplayVariantBySelections(
+  variants: SelectableVariant[],
+  selections: Map<string, string>
+): SelectableVariant | undefined {
+  if (variants.length === 0) return undefined;
+
+  const fullMatch = findVariantBySelections(variants, selections);
+  if (fullMatch) return fullMatch;
+
+  if (selections.size === 0) {
+    return variants.find((variant) => variant.availableForSale) ?? variants[0];
+  }
+
+  return variants.find((variant) => {
+    if (!variant.availableForSale) return false;
+    const options = meaningfulOptions(variant);
+    return options.every((option) => {
+      const selected = selections.get(option.name);
+      return !selected || selected === option.value;
+    });
+  });
+}
+
 export function isOptionValueAvailable(
-  variants: StorefrontVariant[],
+  variants: SelectableVariant[],
   selections: Map<string, string>,
   optionName: string,
   optionValue: string
@@ -96,18 +126,19 @@ export function isOptionValueAvailable(
 
   return variants.some(
     (variant) =>
-      variant.availableForSale && variantMatchesSelections(variant, hypothetical, false, optionName, optionValue)
+      variant.availableForSale &&
+      variantMatchesSelections(variant, hypothetical, false, optionName, optionValue)
   );
 }
 
-function meaningfulOptions(variant: StorefrontVariant) {
+function meaningfulOptions(variant: SelectableVariant) {
   return (variant.selectedOptions ?? []).filter(
     (option) => !isDefaultTitleOption(option.name, [option.value])
   );
 }
 
 function variantMatchesSelections(
-  variant: StorefrontVariant,
+  variant: SelectableVariant,
   selections: Map<string, string>,
   requireFullMatch: boolean,
   requiredOptionName?: string,

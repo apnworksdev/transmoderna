@@ -2,6 +2,8 @@
 import {
   formatPodcastDate,
   formatPodcastNumber,
+  imageAlt,
+  urlForSanityImage,
   type PodcastDocument
 } from '../../lib/sanity';
 
@@ -19,6 +21,11 @@ const publishDate = formatPodcastDate(podcast.publishDate);
 const slug = podcast.slug?.current;
 const detailHref = slug ? `/podcasts/${slug}` : undefined;
 const hasAudio = Boolean(podcast.audioFileUrl);
+const playerBackgroundSrc =
+  variant === 'detail'
+    ? urlForSanityImage(podcast.playerBackgroundImage, { width: 1600 })
+    : undefined;
+const playerBackgroundAlt = imageAlt(podcast.playerBackgroundImage, title);
 ---
 
 <div
@@ -27,16 +34,16 @@ const hasAudio = Boolean(podcast.audioFileUrl);
   data-audio-src={podcast.audioFileUrl ?? ''}
   data-podcast-id={podcast._id}
 >
-  <span class="podcast-player-bar__number">{episodeNumber}</span>
-
   {
-    variant === 'detail' ? (
-      <span class="podcast-player-bar__series">{podcaster}</span>
-    ) : (
-      <span class="podcast-player-bar__series podcast-player-bar__series--plain">{podcaster}</span>
-    )
+    playerBackgroundSrc ? (
+      <div class="podcast-player-bar__bg" aria-hidden="true">
+        <img src={playerBackgroundSrc} alt={playerBackgroundAlt} loading="eager" decoding="async" />
+      </div>
+    ) : null
   }
 
+  <span class="podcast-player-bar__number">{episodeNumber}</span>
+  <span class="podcast-player-bar__series podcast-player-bar__series--plain">{podcaster}</span>
   <span class="podcast-player-bar__title">{title}</span>
 
   <button

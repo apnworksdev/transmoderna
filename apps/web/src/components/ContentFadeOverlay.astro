@@ -1,0 +1,40 @@
+---
+import '../styles/components/content-fade-overlay.css';
+
+interface Props {
+  /** Fade from transparent into this edge. */
+  edge?: 'top' | 'bottom';
+  /** Pin to the viewport or the positioned parent. */
+  position?: 'fixed' | 'absolute';
+  /** CSS color the fade resolves to. Defaults to `--background-color`. */
+  color?: string;
+  zIndex?: number;
+  class?: string;
+}
+
+const {
+  edge = 'bottom',
+  position = 'fixed',
+  color,
+  zIndex = 2,
+  class: className
+} = Astro.props;
+
+const style = [
+  color ? `--content-fade-color: ${color}` : null,
+  `--content-fade-z-index: ${zIndex}`
+]
+  .filter(Boolean)
+  .join('; ');
+---
+
+<div
+  class:list={[
+    'content-fade-overlay',
+    `content-fade-overlay--${edge}`,
+    `content-fade-overlay--${position}`,
+    className
+  ]}
+  style={style}
+  aria-hidden="true"
+></div>

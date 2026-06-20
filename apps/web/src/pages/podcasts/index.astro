@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import ContentFadeOverlay from '../../components/ContentFadeOverlay.astro';
 import PodcastPlayerBar from '../../components/podcast/PodcastPlayerBar.astro';
 import { getPodcastsPage } from '../../lib/sanity';
 import '../../styles/pages/podcasts.css';
@@ -29,7 +30,7 @@ const podcasts = podcastsPage?.podcasts ?? [];
         )
       }
 
-      <div class="page-podcasts-reflection" aria-hidden="true"></div>
+      <ContentFadeOverlay />
     </div>
   </main>
 </BaseLayout>

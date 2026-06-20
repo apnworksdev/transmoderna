@@ -46,6 +46,15 @@ function syncUrlQuery(query: string): void {
   window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
 }
 
+function cardSearchHaystack(card: HTMLElement): string {
+  const fromDataset = card.dataset.shopSearchText?.trim();
+  if (fromDataset) return fromDataset.toLowerCase();
+
+  return (
+    card.querySelector('[data-shop-product-title]')?.textContent?.toLowerCase().trim() ?? ''
+  );
+}
+
 function filterProducts(query: string): void {
   const root = getShopRoot();
   if (!root || root.dataset.shopPage !== 'index') return;
@@ -56,8 +65,8 @@ function filterProducts(query: string): void {
   let visible = 0;
 
   cards.forEach((card) => {
-    const title = card.querySelector('[data-shop-product-title]')?.textContent?.toLowerCase() ?? '';
-    const match = !normalized || title.includes(normalized);
+    const haystack = cardSearchHaystack(card);
+    const match = !normalized || haystack.includes(normalized);
     card.classList.toggle('is-filtered-out', !match);
     if (match) visible += 1;
   });
@@ -73,10 +82,17 @@ function filterProducts(query: string): void {
   }
 }
 
-function navigateToShopSearch(query: string): void {
+async function navigateToShopSearch(query: string): Promise<void> {
   const trimmed = query.trim();
-  const url = trimmed ? `/shop?q=${encodeURIComponent(trimmed)}` : '/shop';
-  window.location.href = url;
+  const path = trimmed ? `/shop?q=${encodeURIComponent(trimmed)}` : '/shop';
+
+  try {
+    const { navigate } = await import('astro:transitions/client');
+    await navigate(path);
+    return;
+  } catch {
+    window.location.assign(path);
+  }
 }
 
 let cleanup: (() => void) | null = null;
@@ -141,7 +157,7 @@ export function initShopSearch(): (() => void) | null {
 
     if (page !== 'index' && event.key === 'Enter') {
       event.preventDefault();
-      navigateToShopSearch(input.value);
+      void navigateToShopSearch(input.value);
     }
   };
 

@@ -1,7 +1,7 @@
 ---
 import PortableTextHtml from '../PortableTextHtml.astro';
 import type { ShopProduct } from '../../lib/shop';
-import { formatEurPrice, parsePriceAmount } from '../../lib/shop-format';
+import { formatPrice, parsePriceAmount } from '../../lib/shop-format';
 import {
   getDefaultVariant,
   getInitialOptionSelections,
@@ -24,18 +24,34 @@ const shopifyEnabled = isStorefrontConfigured();
 const defaultVariant = getDefaultVariant(variants);
 const initialSelections = getInitialOptionSelections(options, variants, defaultVariant);
 const defaultPrice = parsePriceAmount(defaultVariant?.price?.amount);
+const defaultCurrency = defaultVariant?.price?.currencyCode ?? 'EUR';
+const allSoldOut = variants.length > 0 && variants.every((variant) => !variant.availableForSale);
+const addLabel = !shopifyEnabled
+  ? 'Shopify not configured'
+  : variants.length === 0
+    ? 'Unavailable'
+    : allSoldOut
+      ? 'Sold out'
+      : 'Add to cart';
 const variantsPayload = JSON.stringify(
   variants.map((variant) => ({
     id: variant.id,
     title: variant.title,
     selectedOptions: variant.selectedOptions ?? [],
     price: parsePriceAmount(variant.price?.amount),
-    available: variant.availableForSale
+    currencyCode: variant.price?.currencyCode ?? defaultCurrency,
+    quantityAvailable: variant.quantityAvailable ?? null,
+    availableForSale: variant.availableForSale
   }))
 );
 ---
 
-<div class="page-shop-buy" data-product-buy data-product-variants={variantsPayload}>
+<div
+  class="page-shop-buy"
+  data-product-buy
+  data-product-variants={variantsPayload}
+  data-default-currency={defaultCurrency}
+>
   <div class="page-shop-buy-panel">
     <div class="page-shop-buy-row">
       <h2 class="page-shop-buy-name">{title}</h2>
@@ -83,16 +99,17 @@ const variantsPayload = JSON.stringify(
 
     <div class="page-shop-buy-actions">
       <span class="page-shop-buy-price" data-variant-price>
-        {typeof defaultPrice === 'number' ? formatEurPrice(defaultPrice) : '—'}
+        {typeof defaultPrice === 'number' ? formatPrice(defaultPrice, defaultCurrency) : '—'}
       </span>
       <button
         type="button"
         class="page-shop-buy-add"
         data-add-to-cart
         data-qty="1"
+        data-default-label="Add to cart"
         disabled={!shopifyEnabled || variants.length === 0 || !defaultVariant?.availableForSale}
       >
-        {shopifyEnabled ? 'Add to cart' : 'Shopify not configured'}
+        {addLabel}
       </button>
     </div>
   </div>
@@ -114,6 +131,7 @@ const variantsPayload = JSON.stringify(
               data-variant-id={variant.id}
               data-variant-title={variant.title}
               data-price={typeof price === 'number' ? String(price) : ''}
+              data-currency={variant.price?.currencyCode ?? defaultCurrency}
               checked={isDefault}
               disabled={!variant.availableForSale}
             />

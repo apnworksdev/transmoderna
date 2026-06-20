@@ -9,9 +9,9 @@ export const podcastPageType = defineType({
   fields: [
     defineField({
       name: 'backgroundImage',
-      title: 'Background image',
+      title: 'Page background image',
       type: 'image',
-      description: 'Background image for the single podcast page.',
+      description: 'Full-page background on single podcast pages (behind the player bar).',
       options: { hotspot: true },
       fields: [
         defineField({

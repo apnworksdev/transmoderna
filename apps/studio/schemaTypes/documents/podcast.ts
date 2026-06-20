@@ -46,6 +46,20 @@ export const podcastType = defineType({
       validation: (Rule) => Rule.required()
     }),
     defineField({
+      name: 'playerBackgroundImage',
+      title: 'Player bar background',
+      type: 'image',
+      description: 'Background image inside the player bar on the single podcast page.',
+      options: { hotspot: true },
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Alt text',
+          type: 'string'
+        })
+      ]
+    }),
+    defineField({
       name: 'sortOrder',
       title: 'Sort order',
       type: 'number',

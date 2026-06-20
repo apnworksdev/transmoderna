@@ -4,9 +4,9 @@ import { destroyExhibitionsView, initExhibitionsView } from './exhibitions-view.
 import { initAutoplayVideos } from './html-video-autoplay.ts';
 import { initHomeIntro } from './home-intro.ts';
 import { initLayout } from './layout.ts';
-import { initPageTransitions } from './page-transitions.ts';
+import { initPageTransitions, resetDocumentTransitionState } from './page-transitions.ts';
 import { destroyPodcastsPlayer, initPodcastsPlayer } from './podcasts-player.ts';
-import { initPortfolioSwiper } from './portfolio-swiper.ts';
+import { destroyPortfolioSwiper, initPortfolioSwiper } from './portfolio-swiper.ts';
 import { initPortfolioVideoPlayer } from './portfolio-video-player.ts';
 import { destroyShopCart, initShopCart } from './shop-cart.ts';
 import { destroyShopProduct, initShopProduct } from './shop-product.ts';
@@ -54,6 +54,8 @@ function destroyPortfolioModules(): void {
 
   cleanupPortfolioVideoPlayer?.();
   cleanupPortfolioVideoPlayer = null;
+
+  destroyPortfolioSwiper();
 }
 
 function destroyPodcastsModules(): void {
@@ -86,3 +88,12 @@ document.addEventListener('astro:before-preparation', () => {
   destroyShopModules();
 });
 document.addEventListener('astro:page-load', initApp);
+
+window.addEventListener('pageshow', (event) => {
+  if (!event.persisted) {
+    return;
+  }
+
+  resetDocumentTransitionState();
+  initApp();
+});

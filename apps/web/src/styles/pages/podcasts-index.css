@@ -1,0 +1,35 @@
+/* Podcasts index page */
+
+.page-podcasts {
+  position: relative;
+  min-height: 100dvh;
+  padding: var(--podcast-index-padding-top) var(--margin) var(--content-fade-height);
+  background-color: var(--background-color);
+}
+
+.page-podcasts-inner {
+  position: relative;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.page-podcasts-empty {
+  margin: 0;
+  color: var(--gray-color);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-xs);
+  text-transform: uppercase;
+}
+
+.page-podcasts-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--podcast-row-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.page-podcasts-item {
+  position: relative;
+}
