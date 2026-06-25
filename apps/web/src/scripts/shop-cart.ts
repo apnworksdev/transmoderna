@@ -229,10 +229,10 @@ function updateCartBadge(totalQuantity?: number): void {
   if (!badge) return;
 
   if (totalQuantity && totalQuantity > 0) {
-    badge.textContent = String(totalQuantity);
+    badge.textContent = `(${totalQuantity})`;
     badge.hidden = false;
   } else {
-    badge.textContent = '';
+    badge.textContent = '(0)';
     badge.hidden = true;
   }
 }
@@ -331,7 +331,7 @@ function renderCartPage(root: HTMLElement, cart: CartData | null): void {
         ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${title}" loading="lazy" />` : ''}
       </div>
       <div class="page-shop-cart-line-panel">
-        <div class="page-shop-cart-line-row">
+        <div class="page-shop-cart-line-row page-shop-cart-line-row-title">
           <h2 class="page-shop-cart-line-title">${title}</h2>
           <div class="page-shop-buy-qty">
             <span>Quantity</span>
@@ -342,7 +342,7 @@ function renderCartPage(root: HTMLElement, cart: CartData | null): void {
             </div>
           </div>
         </div>
-        <div class="page-shop-cart-line-row">
+        <div class="page-shop-cart-line-row page-shop-cart-line-row-price">
           <span class="page-shop-buy-price">${formatLinePrice(line)}</span>
         </div>
         <div class="page-shop-cart-line-footer">

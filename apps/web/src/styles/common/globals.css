@@ -80,13 +80,6 @@ button {
   cursor: pointer;
 }
 
-@media (hover: hover) {
-  a:hover,
-  button:hover {
-    opacity: 0.4;
-  }
-}
-
 textarea {
   resize: vertical;
 }

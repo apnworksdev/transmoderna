@@ -19,6 +19,7 @@ interface Props {
 
 const { product, variants, options: optionsProp } = Astro.props;
 const title = product.store?.title ?? 'Product';
+const descriptionHtml = product.store?.descriptionHtml?.trim();
 const options = resolveProductOptions(optionsProp, variants);
 const shopifyEnabled = isStorefrontConfigured();
 const defaultVariant = getDefaultVariant(variants);
@@ -141,13 +142,21 @@ const variantsPayload = JSON.stringify(
     }
   </div>
 
-  {product.body ? (
-    <div class="page-shop-buy-description">
-      <PortableTextHtml blocks={product.body} />
-    </div>
-  ) : null}
-
-  <a class="page-shop-shipping-link site-header-pill" href="#">Shipping</a>
-
-  <p class="page-shop-buy-status" data-add-status aria-live="polite"></p>
+  <div class="page-shop-buy-info-container">
+    {
+      descriptionHtml ? (
+        <div class="page-shop-buy-description-container">
+          <div class="page-shop-buy-description" set:html={descriptionHtml} />
+        </div>
+      ) : product.body ? (
+        <div class="page-shop-buy-description-container">
+          <div class="page-shop-buy-description">
+            <PortableTextHtml blocks={product.body} />
+          </div>
+        </div>
+      ) : null
+    }
+  
+    <a class="page-shop-shipping-link site-header-pill" href="#">Shipping</a>
+  </div>
 </div>

@@ -7,7 +7,7 @@
   height: 100%;
   z-index: -1;
   pointer-events: none;
-  opacity: 0.45;
+  background: #000;
 }
 
 .page-work-background {
@@ -15,6 +15,7 @@
   height: 100%;
   object-fit: cover;
   filter: blur(18px);
+  opacity: 0.45;
 }
 
 /* List */
@@ -171,10 +172,6 @@
   display: flex;
   width: max-content;
   animation: clients-marquee-scroll 40s linear infinite;
-}
-
-.clients-marquee:hover .clients-marquee__track {
-  animation-play-state: paused;
 }
 
 .clients-marquee__list {

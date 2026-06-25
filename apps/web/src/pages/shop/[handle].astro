@@ -59,34 +59,25 @@ Astro.response.headers.set(
 
     <ShopProductToolbar title={title} />
 
-    <div
-      class:list={[
-        'page-shop-product-layout',
-        { 'page-shop-product-layout--no-sidebar': images.length <= 1 }
-      ]}
-    >
+    <div class="page-shop-product-layout">
       <div class="page-shop-product-panel">
         <ProductBuy product={product} variants={variants} options={storefront?.options} />
       </div>
 
-      {
-        images.length > 1 ? (
-          <aside class="page-shop-product-sidebar" aria-label="Product images">
-            {images.map((image, index) => (
-              <button
-                type="button"
-                class="page-shop-product-thumb"
-                data-product-thumb
-                data-image-url={image.url}
-                aria-current={index === 0 ? 'true' : 'false'}
-                aria-label={`View image ${index + 1}`}
-              >
-                <img src={image.url} alt={image.altText ?? title} loading="lazy" />
-              </button>
-            ))}
-          </aside>
-        ) : null
-      }
+      <aside class="page-shop-product-sidebar" aria-label="Product images">
+        {images.map((image, index) => (
+          <button
+            type="button"
+            class="page-shop-product-thumb"
+            data-product-thumb
+            data-image-url={image.url}
+            aria-current={index === 0 ? 'true' : 'false'}
+            aria-label={`View image ${index + 1}`}
+          >
+            <img src={image.url} alt={image.altText ?? title} loading="lazy" />
+          </button>
+        ))}
+      </aside>
 
       <div class="page-shop-product-media">
         {
