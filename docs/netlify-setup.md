@@ -36,6 +36,10 @@ Or rely on [`apps/web/netlify.toml`](../apps/web/netlify.toml) / [`apps/studio/n
 
 **Sanity Connect custom sync URL:** `https://<your-domain>/api/shopify-sync`
 
+### Secrets scanning
+
+Netlify scans build output for secret-like values. Astro inlines `PUBLIC_*` vars (and server tokens into SSR function bundles), so the deploy can fail even when the build succeeds. [`apps/web/netlify.toml`](../apps/web/netlify.toml) sets `SECRETS_SCAN_OMIT_KEYS` for the env vars this app uses at build time. Do not commit real tokens — keep them in Netlify **Site settings → Environment variables** only.
+
 ## 2) Studio (`studio.transmoderna.com` or subdomain)
 
 | Setting | Value |

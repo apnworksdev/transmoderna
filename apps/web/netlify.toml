@@ -1,3 +1,8 @@
 [build]
   command = "npm install --include=optional && npm run build --workspace web"
   publish = "apps/web/dist"
+
+  # Astro inlines env vars into SSR bundles and client chunks at build time.
+  # These keys are expected in output (PUBLIC_* are client-safe; server tokens stay in Netlify Functions).
+  [build.environment]
+    SECRETS_SCAN_OMIT_KEYS = "PUBLIC_SANITY_PROJECT_ID,PUBLIC_SANITY_DATASET,PUBLIC_SANITY_API_VERSION,PUBLIC_SHOPIFY_DOMAIN,PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN,PUBLIC_SHOPIFY_MARKET_COUNTRY,SANITY_API_READ_TOKEN,SANITY_API_WRITE_TOKEN,SANITY_STUDIO_PROJECT_ID,SANITY_STUDIO_DATASET,SANITY_STUDIO_SHOPIFY_DOMAIN,SANITY_STUDIO_SHOPIFY_ADMIN_ACCESS_TOKEN"
