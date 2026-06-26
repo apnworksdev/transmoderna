@@ -145,21 +145,18 @@ body.site-menu-open .site-header-pill:hover {
   background: transparent;
   backdrop-filter: blur(0px);
   -webkit-backdrop-filter: blur(0px);
-  filter: blur(0px);
   opacity: 0;
   transition:
-    backdrop-filter var(--transition-time) var(--transition-time) var(--transition-effect),
+    backdrop-filter var(--transition-time) var(--transition-effect),
     -webkit-backdrop-filter var(--transition-time) var(--transition-effect),
-    filter var(--transition-time) var(--transition-effect),
     background-color var(--transition-time) var(--transition-effect),
     opacity var(--transition-time) var(--transition-effect);
 }
 
 .site-menu-container.is-open .site-menu-background {
   background: var(--menu-layer-background);
-  /* backdrop-filter: blur(var(--menu-backdrop-blur)); */
-  /* -webkit-backdrop-filter: blur(var(--menu-backdrop-blur)); */
-  filter: blur(var(--menu-layer-blur));
+  backdrop-filter: blur(var(--menu-backdrop-blur));
+  -webkit-backdrop-filter: blur(var(--menu-backdrop-blur));
   opacity: 1;
 }
 
@@ -167,7 +164,6 @@ body.site-menu-open .site-header-pill:hover {
   .site-menu-container.is-open .site-menu-background {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    filter: none;
   }
 }
 
