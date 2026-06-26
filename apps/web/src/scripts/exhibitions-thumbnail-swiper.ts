@@ -146,6 +146,7 @@ export function initExhibitionsThumbnailSwiper(root: ParentNode = document): Swi
     hideEnterSlot(enterRight);
     hideEnterSlot(enterLeft);
     thumbnailView.classList.add('is-resetting');
+    thumbnailView.classList.remove('is-animating-next', 'is-animating-prev');
     fillSlots();
     requestAnimationFrame(() => {
       thumbnailView.classList.remove('is-resetting');
@@ -172,7 +173,6 @@ export function initExhibitionsThumbnailSwiper(root: ParentNode = document): Swi
     thumbnailView.classList.remove(prepClass);
     thumbnailView.classList.add(animClass);
     await waitTransition(track);
-    thumbnailView.classList.remove(animClass);
   };
 
   const goToInstant = (index: number) => {

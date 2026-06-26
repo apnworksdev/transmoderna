@@ -334,6 +334,12 @@ export function createSlideClickNavigation({
       return rawOffset && !ignoredSlotOffsets.includes(rawOffset);
     });
 
+    const activeSlot = slots.find((slot) => slot.classList.contains('is-active'));
+    const target = event.target;
+    if (activeSlot && target instanceof Node && activeSlot.contains(target)) {
+      return;
+    }
+
     const nearest = findNearestSlideByAxis(event.clientX, event.clientY, slots, nearestAxis);
     if (!(nearest instanceof HTMLElement)) {
       return;

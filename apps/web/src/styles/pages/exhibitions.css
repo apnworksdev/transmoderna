@@ -128,7 +128,7 @@ html[data-exhibitions-view='thumbnail'] .page-exhibitions,
   position: absolute;
   top: 50%;
   left: 50%;
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   width: var(--thumb-title-width);
@@ -145,12 +145,12 @@ html[data-exhibitions-view='thumbnail'] .page-exhibitions,
 
 .page-exhibitions-thumbnail-slide:not([data-exhibitions-thumb-slot='0'])
   .page-exhibitions-thumbnail-slide-title {
-  display: none;
+  opacity: 0;
 }
 
 .page-exhibitions-thumbnail-slide[data-exhibitions-thumb-slot='0']
   .page-exhibitions-thumbnail-slide-title {
-  display: flex;
+  opacity: 1;
 }
 
 .page-exhibitions-thumbnail-slide[data-exhibitions-thumb-slot='-2'] {
@@ -193,6 +193,7 @@ html[data-exhibitions-view='thumbnail'] .page-exhibitions,
 }
 
 .page-exhibitions-thumbnail.is-resetting .page-exhibitions-thumbnail-slide,
+.page-exhibitions-thumbnail.is-resetting .page-exhibitions-thumbnail-slide-title,
 .page-exhibitions-thumbnail.is-entering-next .page-exhibitions-thumbnail-slide,
 .page-exhibitions-thumbnail.is-entering-prev .page-exhibitions-thumbnail-slide {
   transition: none !important;
@@ -206,6 +207,11 @@ html[data-exhibitions-view='thumbnail'] .page-exhibitions,
       filter var(--duration-base) var(--ease),
       opacity var(--duration-base) var(--ease),
       width var(--duration-base) var(--ease);
+  }
+
+  .page-exhibitions-thumbnail.is-animating-next .page-exhibitions-thumbnail-slide-title,
+  .page-exhibitions-thumbnail.is-animating-prev .page-exhibitions-thumbnail-slide-title {
+    transition: opacity var(--duration-base) var(--ease);
   }
 }
 
@@ -302,13 +308,13 @@ html[data-exhibitions-view='thumbnail'] .page-exhibitions,
 .page-exhibitions-thumbnail.is-animating-next
   .page-exhibitions-thumbnail-slide[data-exhibitions-thumb-slot='0']
   .page-exhibitions-thumbnail-slide-title {
-  display: none;
+  opacity: 0;
 }
 
 .page-exhibitions-thumbnail.is-animating-next
   .page-exhibitions-thumbnail-slide[data-exhibitions-thumb-slot='1']
   .page-exhibitions-thumbnail-slide-title {
-  display: flex;
+  opacity: 1;
 }
 
 /* Slide right (prev) */
@@ -364,13 +370,13 @@ html[data-exhibitions-view='thumbnail'] .page-exhibitions,
 .page-exhibitions-thumbnail.is-animating-prev
   .page-exhibitions-thumbnail-slide[data-exhibitions-thumb-slot='0']
   .page-exhibitions-thumbnail-slide-title {
-  display: none;
+  opacity: 0;
 }
 
 .page-exhibitions-thumbnail.is-animating-prev
   .page-exhibitions-thumbnail-slide[data-exhibitions-thumb-slot='-1']
   .page-exhibitions-thumbnail-slide-title {
-  display: flex;
+  opacity: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {

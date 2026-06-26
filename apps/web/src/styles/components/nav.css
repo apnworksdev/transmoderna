@@ -114,10 +114,27 @@ body.site-menu-open .site-header-pill:hover {
   justify-content: center;
   padding: var(--margin);
   overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  transition: visibility 0s linear var(--transition-time);
+}
+
+.site-menu-container.is-open {
+  visibility: visible;
+  pointer-events: auto;
+  transition: visibility 0s linear 0s;
 }
 
 .site-menu-container[hidden] {
   display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-menu-container,
+  .site-menu-background,
+  .site-menu {
+    transition: none;
+  }
 }
 
 .site-menu-background {
@@ -125,14 +142,29 @@ body.site-menu-open .site-header-pill:hover {
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  background: transparent;
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  filter: blur(0px);
+  opacity: 0;
+  transition:
+    backdrop-filter var(--transition-time) var(--transition-time) var(--transition-effect),
+    -webkit-backdrop-filter var(--transition-time) var(--transition-effect),
+    filter var(--transition-time) var(--transition-effect),
+    background-color var(--transition-time) var(--transition-effect),
+    opacity var(--transition-time) var(--transition-effect);
+}
+
+.site-menu-container.is-open .site-menu-background {
   background: var(--menu-layer-background);
-  backdrop-filter: blur(var(--menu-backdrop-blur));
-  -webkit-backdrop-filter: blur(var(--menu-backdrop-blur));
+  /* backdrop-filter: blur(var(--menu-backdrop-blur)); */
+  /* -webkit-backdrop-filter: blur(var(--menu-backdrop-blur)); */
   filter: blur(var(--menu-layer-blur));
+  opacity: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .site-menu-background {
+  .site-menu-container.is-open .site-menu-background {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     filter: none;
@@ -149,6 +181,12 @@ body.site-menu-open .site-header-pill:hover {
   justify-content: center;
   padding: 80px;
   overflow: auto;
+  opacity: 0;
+  transition: opacity var(--transition-time) var(--transition-effect);
+}
+
+.site-menu-container.is-open .site-menu {
+  opacity: 1;
 }
 
 .site-menu-list {

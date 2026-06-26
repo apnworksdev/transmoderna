@@ -684,6 +684,8 @@
   border: solid 0.25px rgba(255, 255, 255, 0.35);
   border-radius: var(--border-radius);
   width: 70%;
+  position: sticky;
+  top: clamp(0px, (50dvh - 68px - 86px), 50dvh);
 }
 
 .page-shop-cart-summary-row {

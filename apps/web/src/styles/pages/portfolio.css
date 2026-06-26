@@ -2,15 +2,14 @@
   --portfolio-aspect-w: 920;
   --portfolio-aspect-h: 620;
   --portfolio-max-w: 920px;
-  --portfolio-ratio-pct: calc(var(--portfolio-aspect-h) / var(--portfolio-aspect-w) * 100%);
   --portfolio-pill-w: 30px;
   --portfolio-gap: 20px;
   --portfolio-dim-center: 0;
   --portfolio-dim-1: 0.25;
   --portfolio-dim-2: 0.5;
   --portfolio-dim-3: 0.75;
-  --portfolio-dim-4: 0.75;
-  --portfolio-dim-hover: 0;
+  --portfolio-dim-4: 0.9;
+  --portfolio-dim-hover: 0.75;
   --portfolio-hover-duration: 220ms;
   --portfolio-slide-ease: cubic-bezier(0.33, 1, 0.68, 1);
   --portfolio-slide-duration: 560ms;
@@ -31,11 +30,53 @@
     var(--portfolio-center-w) / 2 + var(--portfolio-gap) + (var(--portfolio-pill-w) + var(--portfolio-gap)) * 4 +
       var(--portfolio-pill-w) / 2
   );
+  --exhibition-body-gradient: linear-gradient(
+    180deg,
+    rgba(217, 217, 217, 0) 7.69%,
+    rgba(217, 217, 217, 0.0275) 26.93%,
+    rgba(141, 130, 232, 0.100017) 65.87%,
+    rgba(28, 0, 255, 0.25) 100%
+  );
 
   position: relative;
   min-height: 100dvh;
   isolation: isolate;
   background-color: var(--background-color);
+}
+
+.page-portfolio-gradient {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: 100dvh;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--exhibition-body-gradient);
+}
+
+.page-portfolio::after,
+.page-portfolio::before {
+  content: '';
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  background-color: #000000CC;
+  filter: blur(40px);
+  height: 100dvh;
+  width: 400px;
+  top: 0;
+  pointer-events: none;
+}
+
+.page-portfolio::before{
+  left: -40px;
+}
+
+.page-portfolio::after{
+  right: -40px;
 }
 
 /* Horizontal — height-led (920×620) */
@@ -49,7 +90,7 @@
   }
 }
 
-/* Vertical — width-led (920×620 via padding-bottom) */
+/* Vertical — width-led (920×620) */
 @media (orientation: portrait) {
   .page-portfolio {
     --portfolio-center-w: min(80dvw, var(--portfolio-max-w));
@@ -95,6 +136,10 @@
   position: fixed;
   inset: 0;
   z-index: 1;
+}
+
+.page-portfolio-swiper:not([data-portfolio-hydrated]) {
+  visibility: hidden;
 }
 
 .page-portfolio-scroller {
@@ -163,14 +208,20 @@
   }
 }
 
-.page-portfolio-slide-figure {
-  position: relative;
+.page-portfolio-slide-inner {
   flex-shrink: 0;
   width: var(--portfolio-pill-w);
-  margin: 0;
+  height: 100%;
   overflow: hidden;
   border-radius: var(--border-radius);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 1);
+}
+
+.page-portfolio-slide-figure {
+  position: relative;
+  width: var(--portfolio-center-w);
+  height: 100%;
+  margin-inline: auto;
   --portfolio-dim: var(--portfolio-dim-4);
 }
 
@@ -186,10 +237,6 @@
 }
 
 @media (hover: hover) {
-  .page-portfolio-slide-figure::after {
-    transition: opacity var(--portfolio-hover-duration) var(--portfolio-slide-ease);
-  }
-
   .page-portfolio-slide:not(.is-active) .page-portfolio-slide-figure {
     transition: transform var(--portfolio-hover-duration) var(--portfolio-slide-ease);
   }
@@ -199,11 +246,9 @@
     z-index: 10;
   }
 
-  .page-portfolio-swiper:not(.is-animating-next):not(.is-animating-prev):not(.is-jumping)
-    .page-portfolio-slide:not(.is-active):hover
-    .page-portfolio-slide-figure {
-    transform: scale(1.08);
-    --portfolio-dim: var(--portfolio-dim-hover);
+  .page-portfolio-swiper:not(.is-animating-next):not(.is-animating-prev):not(.is-jumping) .page-portfolio-slide:not(.is-active):hover .page-portfolio-slide-figure {
+    /* transform: scale(1.08); */
+    /* --portfolio-dim: var(--portfolio-dim-hover); */
   }
 }
 
@@ -214,38 +259,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-@media (orientation: landscape) {
-  .page-portfolio-slide-figure {
-    height: 100%;
-  }
-}
-
-@media (orientation: portrait) {
-  /* Side pills stay full-height vertical strips; only center uses width-led aspect ratio. */
-  .page-portfolio-slide-figure {
-    height: 100%;
-    padding-bottom: 0;
-  }
-
-  .page-portfolio-slide[data-portfolio-slot='0'] .page-portfolio-slide-figure {
-    height: 0;
-    padding-bottom: var(--portfolio-ratio-pct);
-  }
-
-  .page-portfolio-swiper.is-animating-next .page-portfolio-slide[data-portfolio-slot='1'] .page-portfolio-slide-figure,
-  .page-portfolio-swiper.is-animating-prev .page-portfolio-slide[data-portfolio-slot='-1'] .page-portfolio-slide-figure,
-  .page-portfolio-swiper.is-jumping .page-portfolio-slide.is-jump-target .page-portfolio-slide-figure {
-    height: 0;
-    padding-bottom: var(--portfolio-ratio-pct);
-  }
-
-  .page-portfolio-swiper.is-animating-next .page-portfolio-slide[data-portfolio-slot='0'] .page-portfolio-slide-figure,
-  .page-portfolio-swiper.is-animating-prev .page-portfolio-slide[data-portfolio-slot='0'] .page-portfolio-slide-figure {
-    height: 100%;
-    padding-bottom: 0;
-  }
 }
 
 .page-portfolio-slide-overlay {
@@ -281,8 +294,11 @@
   z-index: 5;
 }
 
-.page-portfolio-slide[data-portfolio-slot='0'] .page-portfolio-slide-figure {
+.page-portfolio-slide[data-portfolio-slot='0'] .page-portfolio-slide-inner {
   width: var(--portfolio-center-w);
+}
+
+.page-portfolio-slide[data-portfolio-slot='0'] .page-portfolio-slide-figure {
   --portfolio-dim: var(--portfolio-dim-center);
 }
 
@@ -363,45 +379,60 @@
 }
 
 .page-portfolio-swiper.is-resetting .page-portfolio-slide,
+.page-portfolio-swiper.is-resetting .page-portfolio-slide-inner,
 .page-portfolio-swiper.is-resetting .page-portfolio-slide-figure,
 .page-portfolio-swiper.is-resetting .page-portfolio-slide-figure::after,
+.page-portfolio-swiper.is-resetting .page-portfolio-slide-overlay,
+.page-portfolio-swiper.is-jumping .page-portfolio-slide-figure::after,
 .page-portfolio-swiper.is-entering-next .page-portfolio-slide,
+.page-portfolio-swiper.is-entering-next .page-portfolio-slide-inner,
 .page-portfolio-swiper.is-entering-next .page-portfolio-slide-figure,
 .page-portfolio-swiper.is-entering-next .page-portfolio-slide-figure::after,
 .page-portfolio-swiper.is-entering-prev .page-portfolio-slide,
+.page-portfolio-swiper.is-entering-prev .page-portfolio-slide-inner,
 .page-portfolio-swiper.is-entering-prev .page-portfolio-slide-figure,
 .page-portfolio-swiper.is-entering-prev .page-portfolio-slide-figure::after {
   transition: none !important;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .page-portfolio-slide-overlay {
+  .page-portfolio-swiper.is-animating-next .page-portfolio-slide-overlay,
+  .page-portfolio-swiper.is-animating-prev .page-portfolio-slide-overlay,
+  .page-portfolio-swiper.is-jumping .page-portfolio-slide-overlay {
     transition: opacity var(--portfolio-slide-duration) var(--portfolio-slide-ease);
   }
 
   .page-portfolio-swiper.is-animating-next .page-portfolio-slide,
   .page-portfolio-swiper.is-animating-prev .page-portfolio-slide,
   .page-portfolio-swiper.is-jumping .page-portfolio-slide {
-    transition: transform var(--portfolio-slide-duration) var(--portfolio-slide-ease);
+    transition:
+      transform var(--portfolio-slide-duration) var(--portfolio-slide-ease),
+      opacity var(--portfolio-slide-duration) var(--portfolio-slide-ease);
   }
 
-  .page-portfolio-swiper.is-animating-next .page-portfolio-slide-figure,
-  .page-portfolio-swiper.is-animating-prev .page-portfolio-slide-figure,
-  .page-portfolio-swiper.is-jumping .page-portfolio-slide-figure,
-  .page-portfolio-swiper.is-jumping .page-portfolio-slide--enter .page-portfolio-slide-figure {
-    transition: width var(--portfolio-slide-duration) var(--portfolio-slide-ease);
-  }
-
-  .page-portfolio-swiper.is-animating-next .page-portfolio-slide-figure::after,
-  .page-portfolio-swiper.is-animating-prev .page-portfolio-slide-figure::after,
-  .page-portfolio-swiper.is-jumping .page-portfolio-slide-figure::after,
-  .page-portfolio-swiper.is-jumping .page-portfolio-slide--enter .page-portfolio-slide-figure::after {
-    transition: opacity var(--portfolio-slide-duration) var(--portfolio-slide-ease);
+  .page-portfolio-swiper.is-animating-next .page-portfolio-slide-inner,
+  .page-portfolio-swiper.is-animating-prev .page-portfolio-slide-inner,
+  .page-portfolio-swiper.is-jumping .page-portfolio-slide-inner,
+  .page-portfolio-swiper.is-jumping .page-portfolio-slide--enter .page-portfolio-slide-inner {
+    transition-property: width;
+    transition-duration: var(--portfolio-slide-duration);
+    transition-timing-function: var(--portfolio-slide-ease);
   }
 }
 
+.page-portfolio-swiper.is-resetting .page-portfolio-slide[data-portfolio-slot='-4'],
+.page-portfolio-swiper.is-resetting .page-portfolio-slide[data-portfolio-slot='4'] {
+  opacity: 0;
+}
+
+.page-portfolio-swiper.is-edge-reveal .page-portfolio-slide[data-portfolio-slot='-4'],
+.page-portfolio-swiper.is-edge-reveal .page-portfolio-slide[data-portfolio-slot='4'] {
+  opacity: 1;
+  transition: opacity 280ms var(--portfolio-slide-ease);
+}
+
 .page-portfolio-swiper.is-jump-prep .page-portfolio-slide,
-.page-portfolio-swiper.is-jump-prep .page-portfolio-slide-figure {
+.page-portfolio-swiper.is-jump-prep .page-portfolio-slide-inner {
   transition: none !important;
 }
 
@@ -443,19 +474,23 @@
   z-index: 6;
 }
 
-.page-portfolio-swiper.is-animating-next .page-portfolio-slide[data-portfolio-slot='1'] .page-portfolio-slide-figure {
+.page-portfolio-swiper.is-animating-next .page-portfolio-slide[data-portfolio-slot='1'] .page-portfolio-slide-inner,
+.page-portfolio-swiper.is-animating-prev .page-portfolio-slide[data-portfolio-slot='-1'] .page-portfolio-slide-inner {
   width: var(--portfolio-center-w);
+}
+
+.page-portfolio-swiper.is-animating-next .page-portfolio-slide[data-portfolio-slot='1'] .page-portfolio-slide-figure,
+.page-portfolio-swiper.is-animating-prev .page-portfolio-slide[data-portfolio-slot='-1'] .page-portfolio-slide-figure {
   --portfolio-dim: var(--portfolio-dim-center);
 }
 
-.page-portfolio-swiper.is-animating-prev .page-portfolio-slide[data-portfolio-slot='-1'] .page-portfolio-slide-figure {
-  width: var(--portfolio-center-w);
-  --portfolio-dim: var(--portfolio-dim-center);
+.page-portfolio-swiper.is-animating-next .page-portfolio-slide[data-portfolio-slot='0'] .page-portfolio-slide-inner,
+.page-portfolio-swiper.is-animating-prev .page-portfolio-slide[data-portfolio-slot='0'] .page-portfolio-slide-inner {
+  width: var(--portfolio-pill-w);
 }
 
 .page-portfolio-swiper.is-animating-next .page-portfolio-slide[data-portfolio-slot='0'] .page-portfolio-slide-figure,
 .page-portfolio-swiper.is-animating-prev .page-portfolio-slide[data-portfolio-slot='0'] .page-portfolio-slide-figure {
-  width: var(--portfolio-pill-w);
   --portfolio-dim: var(--portfolio-dim-1);
 }
 
@@ -498,6 +533,16 @@
   z-index: 1;
 }
 
+.page-portfolio-swiper.is-entering-next .page-portfolio-slide[data-portfolio-slot='enter-right'],
+.page-portfolio-swiper.is-entering-prev .page-portfolio-slide[data-portfolio-slot='enter-left'] {
+  opacity: 0;
+}
+
+.page-portfolio-swiper.is-animating-next .page-portfolio-slide[data-portfolio-slot='enter-right'],
+.page-portfolio-swiper.is-animating-prev .page-portfolio-slide[data-portfolio-slot='enter-left'] {
+  opacity: 1;
+}
+
 .page-portfolio-swiper.is-entering-next .page-portfolio-slide[data-portfolio-slot='enter-right'] {
   transform: translate(calc(-50% + var(--portfolio-x-5)), -50%);
 }
@@ -515,7 +560,13 @@
 }
 
 .page-portfolio-swiper.is-animating-next .page-portfolio-slide[data-portfolio-slot='-4'] {
+  opacity: 0;
   transform: translate(calc(-50% - var(--portfolio-x-5)), -50%);
+}
+
+.page-portfolio-swiper.is-animating-next .page-portfolio-slide[data-portfolio-slot='4'] {
+  opacity: 0;
+  transform: translate(calc(-50% + var(--portfolio-x-4)), -50%);
 }
 
 .page-portfolio-swiper.is-animating-next .page-portfolio-slide[data-portfolio-slot='-3'] {
@@ -546,11 +597,8 @@
   transform: translate(calc(-50% + var(--portfolio-x-2)), -50%);
 }
 
-.page-portfolio-swiper.is-animating-next .page-portfolio-slide[data-portfolio-slot='4'] {
-  transform: translate(calc(-50% + var(--portfolio-x-3)), -50%);
-}
-
 .page-portfolio-swiper.is-animating-prev .page-portfolio-slide[data-portfolio-slot='4'] {
+  opacity: 0;
   transform: translate(calc(-50% + var(--portfolio-x-5)), -50%);
 }
 
@@ -583,7 +631,8 @@
 }
 
 .page-portfolio-swiper.is-animating-prev .page-portfolio-slide[data-portfolio-slot='-4'] {
-  transform: translate(calc(-50% - var(--portfolio-x-3)), -50%);
+  opacity: 0;
+  transform: translate(calc(-50% - var(--portfolio-x-4)), -50%);
 }
 
 /* Single page */

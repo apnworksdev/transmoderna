@@ -56,6 +56,97 @@ function formatCarouselLabel(item: PortfolioCarouselItem): string {
   return item.title;
 }
 
+function applyPortfolioSlotContent(
+  slot: HTMLElement,
+  item: PortfolioCarouselItem,
+  isActive: boolean
+): void {
+  const link = slot.querySelector<HTMLAnchorElement>('.page-portfolio-slide-link');
+  const image = slot.querySelector<HTMLImageElement>('.page-portfolio-slide-image');
+  const label = slot.querySelector<HTMLElement>('.page-portfolio-slide-label');
+  const year = slot.querySelector<HTMLElement>('.page-portfolio-slide-year');
+
+  slot.classList.toggle('is-active', isActive);
+
+  if (image) {
+    if (item.thumbSrc) {
+      image.src = item.thumbSrc;
+      image.alt = item.thumbAlt;
+      image.hidden = false;
+    } else {
+      image.removeAttribute('src');
+      image.hidden = true;
+    }
+  }
+
+  if (label) {
+    label.textContent = formatCarouselLabel(item);
+  }
+
+  if (year) {
+    if (item.year != null) {
+      year.textContent = String(item.year);
+      year.hidden = false;
+    } else {
+      year.textContent = '';
+      year.hidden = true;
+    }
+  }
+
+  if (link) {
+    if (item.href && isActive) {
+      link.href = item.href;
+      link.hidden = false;
+    } else {
+      link.removeAttribute('href');
+      link.hidden = !item.href;
+    }
+  }
+}
+
+export function hydratePortfolioIndexCarousel(root: ParentNode = document): number | null {
+  const swiperRoot = root.querySelector<HTMLElement>('[data-portfolio-swiper]');
+  if (!swiperRoot) {
+    return null;
+  }
+
+  let items: PortfolioCarouselItem[] = [];
+  try {
+    items = JSON.parse(swiperRoot.dataset.portfolioItems ?? '[]') as PortfolioCarouselItem[];
+  } catch {
+    return null;
+  }
+
+  const total = items.length;
+  if (total === 0) {
+    return null;
+  }
+
+  const activeIndex = getStoredPortfolioActiveIndex(total);
+
+  for (const offset of SLOT_OFFSETS) {
+    const slot = swiperRoot.querySelector<HTMLElement>(`[data-portfolio-slot="${offset}"]`);
+    if (!slot) {
+      return null;
+    }
+
+    const item = items[wrapIndex(activeIndex + offset, total)];
+    if (item) {
+      applyPortfolioSlotContent(slot, item, offset === 0);
+    }
+  }
+
+  const liveRegion = swiperRoot.querySelector<HTMLElement>('[data-portfolio-live]');
+  if (liveRegion) {
+    liveRegion.textContent = items[activeIndex]?.title ?? '';
+  }
+
+  swiperRoot.dataset.portfolioActiveIndex = String(activeIndex);
+  swiperRoot.dataset.portfolioHydrated = 'true';
+
+  return activeIndex;
+}
+
 function countSteps(from: number, to: number, total: number): number {
   const direction = getDirection(from, to, total);
   if (direction === 0) {
@@ -100,11 +191,11 @@ function dimForSlotOffset(offset: number): string {
   return 'var(--portfolio-dim-4)';
 }
 
-function setFigureWidth(figure: HTMLElement | null, isCenter: boolean) {
-  if (!figure) {
+function setRevealWidth(inner: HTMLElement | null, isCenter: boolean) {
+  if (!inner) {
     return;
   }
-  figure.style.width = isCenter ? 'var(--portfolio-center-w)' : 'var(--portfolio-pill-w)';
+  inner.style.width = isCenter ? 'var(--portfolio-center-w)' : 'var(--portfolio-pill-w)';
 }
 
 function setFigureDim(figure: HTMLElement | null, offset: number) {
@@ -127,7 +218,8 @@ export function resetPortfolioSwiperDom(root: ParentNode = document): void {
     'is-animating-prev',
     'is-jump-prep',
     'is-jumping',
-    'is-resetting'
+    'is-resetting',
+    'is-edge-reveal'
   );
 
   swiperRoot.querySelectorAll<HTMLElement>('[data-portfolio-slot]').forEach((slot) => {
@@ -135,11 +227,13 @@ export function resetPortfolioSwiperDom(root: ParentNode = document): void {
     slot.style.zIndex = '';
     slot.classList.remove('is-jump-target');
 
+    const inner = slot.querySelector<HTMLElement>('.page-portfolio-slide-inner');
     const figure = slot.querySelector<HTMLElement>('.page-portfolio-slide-figure');
+    if (inner) {
+      inner.style.width = '';
+    }
     if (figure) {
-      figure.style.width = '';
       figure.style.opacity = '';
-      figure.style.transform = '';
       figure.style.removeProperty('--portfolio-dim');
     }
 
@@ -150,12 +244,49 @@ export function resetPortfolioSwiperDom(root: ParentNode = document): void {
   });
 }
 
-export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup | null {
-  resetPortfolioSwiperDom(root);
+function clearPortfolioAnimationState(swiperRoot: HTMLElement): void {
+  swiperRoot.classList.remove(
+    'is-entering-next',
+    'is-entering-prev',
+    'is-animating-next',
+    'is-animating-prev',
+    'is-jump-prep',
+    'is-jumping',
+    'is-resetting',
+    'is-edge-reveal'
+  );
 
+  swiperRoot.querySelectorAll<HTMLElement>('[data-portfolio-slot]').forEach((slot) => {
+    if (slot.classList.contains('page-portfolio-slide--enter')) {
+      slot.hidden = true;
+      slot.setAttribute('aria-hidden', 'true');
+    }
+  });
+}
+
+function finishPortfolioReset(swiperRoot: HTMLElement): void {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      swiperRoot.classList.remove('is-resetting');
+      swiperRoot.classList.add('is-edge-reveal');
+      window.setTimeout(() => {
+        swiperRoot.classList.remove('is-edge-reveal');
+      }, 280);
+    });
+  });
+}
+
+export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup | null {
   const swiperRoot = root.querySelector<HTMLElement>('[data-portfolio-swiper]');
   if (!swiperRoot) {
     return null;
+  }
+
+  const alreadyHydrated = swiperRoot.dataset.portfolioHydrated === 'true';
+  if (alreadyHydrated) {
+    clearPortfolioAnimationState(swiperRoot);
+  } else {
+    resetPortfolioSwiperDom(root);
   }
 
   let items: PortfolioCarouselItem[] = [];
@@ -184,7 +315,10 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
   }
 
   const total = items.length;
-  let activeIndex = getStoredPortfolioActiveIndex(total);
+  const storedIndex = Number.parseInt(swiperRoot.dataset.portfolioActiveIndex ?? '', 10);
+  let activeIndex = Number.isFinite(storedIndex)
+    ? wrapIndex(storedIndex, total)
+    : getStoredPortfolioActiveIndex(total);
   let isAnimating = false;
   const preload = createImagePreloader();
 
@@ -198,47 +332,7 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
   };
 
   const setSlotContent = (slot: HTMLElement, item: PortfolioCarouselItem, isActive: boolean) => {
-    const link = slot.querySelector<HTMLAnchorElement>('.page-portfolio-slide-link');
-    const image = slot.querySelector<HTMLImageElement>('.page-portfolio-slide-image');
-    const label = slot.querySelector<HTMLElement>('.page-portfolio-slide-label');
-    const year = slot.querySelector<HTMLElement>('.page-portfolio-slide-year');
-
-    slot.classList.toggle('is-active', isActive);
-
-    if (image) {
-      if (item.thumbSrc) {
-        image.src = item.thumbSrc;
-        image.alt = item.thumbAlt;
-        image.hidden = false;
-      } else {
-        image.removeAttribute('src');
-        image.hidden = true;
-      }
-    }
-
-    if (label) {
-      label.textContent = formatCarouselLabel(item);
-    }
-
-    if (year) {
-      if (item.year != null) {
-        year.textContent = String(item.year);
-        year.hidden = false;
-      } else {
-        year.textContent = '';
-        year.hidden = true;
-      }
-    }
-
-    if (link) {
-      if (item.href && isActive) {
-        link.href = item.href;
-        link.hidden = false;
-      } else {
-        link.removeAttribute('href');
-        link.hidden = !item.href;
-      }
-    }
+    applyPortfolioSlotContent(slot, item, isActive);
   };
 
   const fillSlots = () => {
@@ -283,12 +377,11 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
 
   const snapAfterAnimation = () => {
     hideAllEnterSlots();
-    clearJumpStyles();
     swiperRoot.classList.add('is-resetting');
+    swiperRoot.classList.remove('is-animating-next', 'is-animating-prev');
+    clearJumpStyles();
     fillSlots();
-    requestAnimationFrame(() => {
-      swiperRoot.classList.remove('is-resetting');
-    });
+    finishPortfolioReset(swiperRoot);
   };
 
   const clearJumpStyles = () => {
@@ -299,11 +392,13 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
       slot.style.zIndex = '';
       slot.classList.remove('is-jump-target');
 
+      const inner = slot.querySelector<HTMLElement>('.page-portfolio-slide-inner');
       const figure = slot.querySelector<HTMLElement>('.page-portfolio-slide-figure');
+      if (inner) {
+        inner.style.width = '';
+      }
       if (figure) {
-        figure.style.width = '';
         figure.style.opacity = '';
-        figure.style.transform = '';
         figure.style.removeProperty('--portfolio-dim');
       }
     }
@@ -319,8 +414,9 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
     slot.style.transform = transformForSlotOffset(endOffset);
     slot.style.zIndex = options.zIndex ?? (endOffset === 0 ? '6' : '');
     slot.classList.toggle('is-jump-target', options.isCenter ?? endOffset === 0);
+    const inner = slot.querySelector<HTMLElement>('.page-portfolio-slide-inner');
     const figure = slot.querySelector<HTMLElement>('.page-portfolio-slide-figure');
-    setFigureWidth(figure, endOffset === 0);
+    setRevealWidth(inner, endOffset === 0);
     setFigureDim(figure, endOffset);
   };
 
@@ -399,11 +495,10 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
     applyJumpEnterEndStyles(steps, direction);
     await waitTransition(track, {
       slideClass: 'page-portfolio-slide',
-      figureClass: 'page-portfolio-slide-figure',
+      figureClass: 'page-portfolio-slide-inner',
       propertyNames: ['transform', 'width'],
       timeoutMs: 700
     });
-    swiperRoot.classList.remove('is-jumping');
   };
 
   const runSlideAnimation = async (direction: 'next' | 'prev') => {
@@ -428,11 +523,10 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
     swiperRoot.classList.add(animClass);
     await waitTransition(track, {
       slideClass: 'page-portfolio-slide',
-      figureClass: 'page-portfolio-slide-figure',
+      figureClass: 'page-portfolio-slide-inner',
       propertyNames: ['transform', 'width'],
       timeoutMs: 700
     });
-    swiperRoot.classList.remove(animClass);
   };
 
   const goToInstant = (index: number) => {
@@ -514,7 +608,13 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
   scroller.addEventListener('keydown', keys.onKeyDown);
 
   preloadAround(activeIndex);
-  fillSlots();
+
+  if (!alreadyHydrated) {
+    swiperRoot.classList.add('is-resetting');
+    fillSlots();
+    swiperRoot.dataset.portfolioHydrated = 'true';
+    finishPortfolioReset(swiperRoot);
+  }
 
   return () => {
     scroller.removeEventListener('wheel', wheel.onWheel);
@@ -531,7 +631,8 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
       'is-animating-prev',
       'is-jump-prep',
       'is-jumping',
-      'is-resetting'
+      'is-resetting',
+      'is-edge-reveal'
     );
     clearJumpStyles();
     hideAllEnterSlots();

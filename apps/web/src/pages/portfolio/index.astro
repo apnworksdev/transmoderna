@@ -37,6 +37,7 @@ function formatInitialLabel(item: (typeof carouselItems)[number]): string {
 
 <BaseLayout title="Portfolio — Transmoderna">
   <main class="page-portfolio" data-portfolio-page>
+    <div class="page-portfolio-gradient" aria-hidden="true"></div>
     {
       backgroundSrc ? (
         <div class="page-portfolio-bg" aria-hidden="true">
@@ -82,30 +83,32 @@ function formatInitialLabel(item: (typeof carouselItems)[number]): string {
                         class="page-portfolio-slide-link"
                         href={isActive && item?.href ? item.href : undefined}
                       >
-                        <figure class="page-portfolio-slide-figure">
-                          {
-                            item?.thumbSrc ? (
-                              <img
-                                class="page-portfolio-slide-image"
-                                src={item.thumbSrc}
-                                alt={item.thumbAlt}
-                                width={1400}
-                                loading={isActive ? 'eager' : 'lazy'}
-                                decoding="async"
-                              />
-                            ) : null
-                          }
-                          <figcaption class="page-portfolio-slide-overlay">
-                            <span class="page-portfolio-slide-label">{label}</span>
+                        <div class="page-portfolio-slide-inner">
+                          <figure class="page-portfolio-slide-figure">
                             {
-                              item?.year != null ? (
-                                <span class="page-portfolio-slide-year">{item.year}</span>
-                              ) : (
-                                <span class="page-portfolio-slide-year" hidden />
-                              )
+                              item?.thumbSrc ? (
+                                <img
+                                  class="page-portfolio-slide-image"
+                                  src={item.thumbSrc}
+                                  alt={item.thumbAlt}
+                                  width={1400}
+                                  loading={isActive ? 'eager' : 'lazy'}
+                                  decoding="async"
+                                />
+                              ) : null
                             }
-                          </figcaption>
-                        </figure>
+                            <figcaption class="page-portfolio-slide-overlay">
+                              <span class="page-portfolio-slide-label">{label}</span>
+                              {
+                                item?.year != null ? (
+                                  <span class="page-portfolio-slide-year">{item.year}</span>
+                                ) : (
+                                  <span class="page-portfolio-slide-year" hidden />
+                                )
+                              }
+                            </figcaption>
+                          </figure>
+                        </div>
                       </a>
                     </li>
                   );
@@ -120,13 +123,15 @@ function formatInitialLabel(item: (typeof carouselItems)[number]): string {
                       hidden
                       aria-hidden="true"
                     >
-                      <figure class="page-portfolio-slide-figure">
-                        <img class="page-portfolio-slide-image" alt="" decoding="async" />
-                        <figcaption class="page-portfolio-slide-overlay">
-                          <span class="page-portfolio-slide-label" />
-                          <span class="page-portfolio-slide-year" hidden />
-                        </figcaption>
-                      </figure>
+                      <div class="page-portfolio-slide-inner">
+                        <figure class="page-portfolio-slide-figure">
+                          <img class="page-portfolio-slide-image" alt="" decoding="async" />
+                          <figcaption class="page-portfolio-slide-overlay">
+                            <span class="page-portfolio-slide-label" />
+                            <span class="page-portfolio-slide-year" hidden />
+                          </figcaption>
+                        </figure>
+                      </div>
                     </li>
                   )
                 )
@@ -140,13 +145,15 @@ function formatInitialLabel(item: (typeof carouselItems)[number]): string {
                       hidden
                       aria-hidden="true"
                     >
-                      <figure class="page-portfolio-slide-figure">
-                        <img class="page-portfolio-slide-image" alt="" decoding="async" />
-                        <figcaption class="page-portfolio-slide-overlay">
-                          <span class="page-portfolio-slide-label" />
-                          <span class="page-portfolio-slide-year" hidden />
-                        </figcaption>
-                      </figure>
+                      <div class="page-portfolio-slide-inner">
+                        <figure class="page-portfolio-slide-figure">
+                          <img class="page-portfolio-slide-image" alt="" decoding="async" />
+                          <figcaption class="page-portfolio-slide-overlay">
+                            <span class="page-portfolio-slide-label" />
+                            <span class="page-portfolio-slide-year" hidden />
+                          </figcaption>
+                        </figure>
+                      </div>
                     </li>
                   )
                 )

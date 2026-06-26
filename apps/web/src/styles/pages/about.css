@@ -1,11 +1,11 @@
 .page-about {
-  position: fixed;
+  /* position: fixed; */
   display: flex;
   flex-direction: column;
   gap: 80px;
-  height: 100dvh;
-  padding: 93px var(--margin) var(--margin);
-  overflow: hidden;
+  /* height: 100dvh; */
+  padding: 93px var(--margin);
+  /* overflow: hidden; */
   isolation: isolate;
   background-color: var(--background-color);
 }
@@ -49,8 +49,8 @@
 }
 
 .page-about-inner {
-  flex: 1;
-  overflow: auto;
+  /* flex: 1; */
+  /* overflow: auto; */
   position: relative;
   z-index: 1;
   display: grid;
@@ -246,6 +246,11 @@
 
 .page-about-footer {
   position: relative;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  padding: var(--margin);
   z-index: 2;
   display: grid;
   grid-template-columns: 1fr auto 1fr;

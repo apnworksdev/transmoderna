@@ -1,6 +1,8 @@
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+const MENU_TRANSITION_MS = 600;
+
 export function initLayout(): void {
   const toggle = document.querySelector<HTMLButtonElement>('[data-site-menu-toggle]');
   const label = document.querySelector<HTMLElement>('[data-site-menu-toggle-label]');
@@ -12,6 +14,7 @@ export function initLayout(): void {
   }
 
   let trapHandler: ((event: KeyboardEvent) => void) | null = null;
+  let closeTimeout: number | null = null;
 
   const getFocusables = () =>
     Array.from(menu.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
@@ -19,10 +22,13 @@ export function initLayout(): void {
     );
 
   const setOpen = (open: boolean) => {
+    if (closeTimeout) {
+      window.clearTimeout(closeTimeout);
+      closeTimeout = null;
+    }
+
     toggle.setAttribute('aria-expanded', String(open));
     label.textContent = open ? 'Close' : 'Menu';
-    container.hidden = !open;
-    container.classList.toggle('is-open', open);
     document.body.classList.toggle('site-menu-open', open);
 
     if (trapHandler) {
@@ -31,39 +37,51 @@ export function initLayout(): void {
     }
 
     if (open) {
-      const focusables = getFocusables();
-      const first = focusables[0];
-      const last = focusables.at(-1);
+      container.hidden = false;
+      requestAnimationFrame(() => {
+        container.classList.add('is-open');
 
-      if (first) {
-        first.focus();
-      }
+        const focusables = getFocusables();
+        const first = focusables[0];
+        const last = focusables.at(-1);
 
-      if (first && last) {
-        trapHandler = (event: KeyboardEvent) => {
-          if (event.key !== 'Tab') {
-            return;
-          }
+        if (first) {
+          first.focus();
+        }
 
-          const items = getFocusables();
-          const firstItem = items[0];
-          const lastItem = items.at(-1);
-          if (!firstItem || !lastItem) {
-            return;
-          }
+        if (first && last) {
+          trapHandler = (event: KeyboardEvent) => {
+            if (event.key !== 'Tab') {
+              return;
+            }
 
-          if (event.shiftKey && document.activeElement === firstItem) {
-            event.preventDefault();
-            lastItem.focus();
-          } else if (!event.shiftKey && document.activeElement === lastItem) {
-            event.preventDefault();
-            firstItem.focus();
-          }
-        };
+            const items = getFocusables();
+            const firstItem = items[0];
+            const lastItem = items.at(-1);
+            if (!firstItem || !lastItem) {
+              return;
+            }
 
-        container.addEventListener('keydown', trapHandler);
-      }
+            if (event.shiftKey && document.activeElement === firstItem) {
+              event.preventDefault();
+              lastItem.focus();
+            } else if (!event.shiftKey && document.activeElement === lastItem) {
+              event.preventDefault();
+              firstItem.focus();
+            }
+          };
+
+          container.addEventListener('keydown', trapHandler);
+        }
+      });
     } else {
+      container.classList.remove('is-open');
+      closeTimeout = window.setTimeout(() => {
+        if (toggle.getAttribute('aria-expanded') !== 'true') {
+          container.hidden = true;
+        }
+        closeTimeout = null;
+      }, MENU_TRANSITION_MS);
       toggle.focus();
     }
   };

@@ -1,3 +1,5 @@
+import { hydratePortfolioIndexCarousel } from './portfolio-swiper.ts';
+
 type TransitionBeforePreparationEvent = Event & {
   from: URL;
   to: URL;
@@ -78,6 +80,12 @@ export function initPageTransitions(): void {
     true
   );
 
+  document.addEventListener('click', (event) => {
+    if (event.defaultPrevented) {
+      unmarkNavigating();
+    }
+  });
+
   document.addEventListener('astro:before-preparation', (event) => {
     unmarkNavigating();
 
@@ -87,7 +95,9 @@ export function initPageTransitions(): void {
     }
 
     transitionEvent.loader = async () => {
-      transitionEvent.newDocument = await fetchFreshDocument(transitionEvent.to);
+      const freshDocument = await fetchFreshDocument(transitionEvent.to);
+      hydratePortfolioIndexCarousel(freshDocument);
+      transitionEvent.newDocument = freshDocument;
     };
   });
 
