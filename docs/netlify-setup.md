@@ -2,15 +2,17 @@
 
 Create **two** Netlify sites from this repository.
 
+Netlify runs the build from the **repository root** (`/opt/build/repo`) even when `packagePath` / base directory is set to `apps/web` or `apps/studio`. Do **not** use `cd ../..` in build commands — that escapes the checkout and fails with `EACCES`.
+
+Or rely on [`apps/web/netlify.toml`](../apps/web/netlify.toml) / [`apps/studio/netlify.toml`](../apps/studio/netlify.toml).
+
 ## 1) Web (`www.transmoderna.com` or your domain)
 
 | Setting | Value |
 |---------|--------|
-| Base directory | `apps/web` |
-| Build command | `cd ../.. && npm install --include=optional && npm run build --workspace web` |
-| Publish directory | `dist` |
-
-Or rely on [`apps/web/netlify.toml`](../apps/web/netlify.toml).
+| Base / package directory | `apps/web` (or leave empty — `netlify.toml` paths are repo-root relative) |
+| Build command | *(from `apps/web/netlify.toml`)* `npm install --include=optional && npm run build --workspace web` |
+| Publish directory | `apps/web/dist` |
 
 ### Web environment variables
 
@@ -38,9 +40,9 @@ Or rely on [`apps/web/netlify.toml`](../apps/web/netlify.toml).
 
 | Setting | Value |
 |---------|--------|
-| Base directory | `apps/studio` |
-| Build command | `npm run build` |
-| Publish directory | `dist` |
+| Base / package directory | `apps/studio` |
+| Build command | *(from `apps/studio/netlify.toml`)* `npm install && npm run build --workspace studio` |
+| Publish directory | `apps/studio/dist` |
 
 ### Studio environment variables
 
