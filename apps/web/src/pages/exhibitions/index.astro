@@ -41,12 +41,17 @@ const fullViewItems = exhibitions.map((item) => {
   };
 });
 
-const fullSlotOffsets = [-3, -2, -1, 0, 1, 2, 3];
 const thumbnailSlotOffsets = [-2, -1, 0, 1, 2];
+const fullLoopCopies = 3;
 
 function wrapExhibitionIndex(index: number, length: number): number {
   return ((index % length) + length) % length;
 }
+
+const fullLoopItems =
+  fullViewItems.length > 0
+    ? Array.from({ length: fullLoopCopies }, () => fullViewItems).flat()
+    : [];
 ---
 
 <BaseLayout title="Exhibitions — Transmoderna">
@@ -59,10 +64,19 @@ function wrapExhibitionIndex(index: number, length: number): number {
       const mode = localStorage.getItem(storageKey);
       document.documentElement.dataset.exhibitionsView =
         mode === 'thumbnail' ? 'thumbnail' : 'full';
+      if (mode !== 'thumbnail') {
+        document.documentElement.classList.add('exhibitions-list-pending');
+      }
     } catch (e) {
       document.documentElement.dataset.exhibitionsView = 'full';
+      document.documentElement.classList.add('exhibitions-list-pending');
     }
   </script>
+  <style is:inline>
+    html.exhibitions-list-pending .page-exhibitions-full-scroller {
+      visibility: hidden;
+    }
+  </style>
 
   <main class="page-exhibitions" data-exhibitions-page data-exhibitions-view="full">
     {
@@ -235,19 +249,19 @@ function wrapExhibitionIndex(index: number, length: number): number {
               data-exhibitions-full-scroller
               tabindex="0"
             >
-              <ul class="page-exhibitions-full-list" data-exhibitions-full-list>
+              <ul class="page-exhibitions-full-track" data-exhibitions-full-track>
                 {
-                  fullSlotOffsets.map((offset) => {
-                    const item = fullViewItems[wrapExhibitionIndex(offset, fullViewItems.length)];
-                    const isActive = offset === 0;
+                  fullLoopItems.map((item, loopIndex) => {
+                    const itemIndex = wrapExhibitionIndex(loopIndex, fullViewItems.length);
 
                     return (
                       <li
-                        class:list={['page-exhibitions-full-slide', { 'is-active': isActive }]}
-                        data-exhibitions-slot={offset}
+                        class="page-exhibitions-full-slide"
+                        data-exhibitions-loop-index={loopIndex}
+                        data-exhibitions-item-index={itemIndex}
                       >
                         {item?.href ? (
-                          <a class="page-exhibitions-full-slide-link" href={item.href}>
+                          <a class="page-exhibitions-full-slide-link">
                             <span class="page-exhibitions-full-slide-title">{item.title}</span>
                           </a>
                         ) : (

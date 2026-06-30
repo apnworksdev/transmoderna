@@ -34,19 +34,21 @@ const INCOMING_OFFSET = WINDOW_RADIUS + 1;
 const ENTER_RIGHT_SLOTS = ['enter-right', 'enter-right-2', 'enter-right-3', 'enter-right-4'] as const;
 const ENTER_LEFT_SLOTS = ['enter-left', 'enter-left-2', 'enter-left-3', 'enter-left-4'] as const;
 
-const SLOT_TRANSFORMS: Record<number, string> = {
-  [-5]: 'translate(calc(-50% - var(--portfolio-x-5)), -50%)',
-  [-4]: 'translate(calc(-50% - var(--portfolio-x-4)), -50%)',
-  [-3]: 'translate(calc(-50% - var(--portfolio-x-3)), -50%)',
-  [-2]: 'translate(calc(-50% - var(--portfolio-x-2)), -50%)',
-  [-1]: 'translate(calc(-50% - var(--portfolio-x-1)), -50%)',
-  0: 'translate(-50%, -50%)',
-  1: 'translate(calc(-50% + var(--portfolio-x-1)), -50%)',
-  2: 'translate(calc(-50% + var(--portfolio-x-2)), -50%)',
-  3: 'translate(calc(-50% + var(--portfolio-x-3)), -50%)',
-  4: 'translate(calc(-50% + var(--portfolio-x-4)), -50%)',
-  5: 'translate(calc(-50% + var(--portfolio-x-5)), -50%)'
-};
+const CHAINED_SLIDE_DURATION_MS = 560;
+const SINGLE_SLIDE_TIMEOUT_MS = 900;
+const CHAINED_SLIDE_TIMEOUT_MS = 760;
+
+const ANIMATION_CLASSES = [
+  'is-entering-next',
+  'is-entering-prev',
+  'is-animating-next',
+  'is-animating-prev',
+  'is-jump-prep',
+  'is-jumping',
+  'is-resetting',
+  'is-final-snap',
+  'is-edge-reveal'
+] as const;
 
 function formatCarouselLabel(item: PortfolioCarouselItem): string {
   const subtitle = item.subtitle?.trim();
@@ -164,45 +166,16 @@ function countSteps(from: number, to: number, total: number): number {
   return steps;
 }
 
-function transformForSlotOffset(offset: number): string {
-  if (offset <= -5) {
-    return SLOT_TRANSFORMS[-5];
-  }
-  if (offset >= 5) {
-    return SLOT_TRANSFORMS[5];
-  }
-  return SLOT_TRANSFORMS[offset] ?? SLOT_TRANSFORMS[0];
-}
-
-function dimForSlotOffset(offset: number): string {
-  const distance = Math.min(Math.abs(offset), 4);
-  if (distance === 0) {
-    return 'var(--portfolio-dim-center)';
-  }
-  if (distance === 1) {
-    return 'var(--portfolio-dim-1)';
-  }
-  if (distance === 2) {
-    return 'var(--portfolio-dim-2)';
-  }
-  if (distance === 3) {
-    return 'var(--portfolio-dim-3)';
-  }
-  return 'var(--portfolio-dim-4)';
-}
-
-function setRevealWidth(inner: HTMLElement | null, isCenter: boolean) {
-  if (!inner) {
-    return;
-  }
-  inner.style.width = isCenter ? 'var(--portfolio-center-w)' : 'var(--portfolio-pill-w)';
-}
-
-function setFigureDim(figure: HTMLElement | null, offset: number) {
-  if (!figure) {
-    return;
-  }
-  figure.style.setProperty('--portfolio-dim', dimForSlotOffset(offset));
+function finishPortfolioReset(swiperRoot: HTMLElement): void {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      swiperRoot.classList.remove('is-resetting', 'is-final-snap');
+      swiperRoot.classList.add('is-edge-reveal');
+      window.setTimeout(() => {
+        swiperRoot.classList.remove('is-edge-reveal');
+      }, 320);
+    });
+  });
 }
 
 export function resetPortfolioSwiperDom(root: ParentNode = document): void {
@@ -211,16 +184,7 @@ export function resetPortfolioSwiperDom(root: ParentNode = document): void {
     return;
   }
 
-  swiperRoot.classList.remove(
-    'is-entering-next',
-    'is-entering-prev',
-    'is-animating-next',
-    'is-animating-prev',
-    'is-jump-prep',
-    'is-jumping',
-    'is-resetting',
-    'is-edge-reveal'
-  );
+  swiperRoot.classList.remove(...ANIMATION_CLASSES);
 
   swiperRoot.querySelectorAll<HTMLElement>('[data-portfolio-slot]').forEach((slot) => {
     slot.style.transform = '';
@@ -245,34 +209,13 @@ export function resetPortfolioSwiperDom(root: ParentNode = document): void {
 }
 
 function clearPortfolioAnimationState(swiperRoot: HTMLElement): void {
-  swiperRoot.classList.remove(
-    'is-entering-next',
-    'is-entering-prev',
-    'is-animating-next',
-    'is-animating-prev',
-    'is-jump-prep',
-    'is-jumping',
-    'is-resetting',
-    'is-edge-reveal'
-  );
+  swiperRoot.classList.remove(...ANIMATION_CLASSES);
 
   swiperRoot.querySelectorAll<HTMLElement>('[data-portfolio-slot]').forEach((slot) => {
     if (slot.classList.contains('page-portfolio-slide--enter')) {
       slot.hidden = true;
       slot.setAttribute('aria-hidden', 'true');
     }
-  });
-}
-
-function finishPortfolioReset(swiperRoot: HTMLElement): void {
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      swiperRoot.classList.remove('is-resetting');
-      swiperRoot.classList.add('is-edge-reveal');
-      window.setTimeout(() => {
-        swiperRoot.classList.remove('is-edge-reveal');
-      }, 280);
-    });
   });
 }
 
@@ -331,16 +274,12 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
     }
   };
 
-  const setSlotContent = (slot: HTMLElement, item: PortfolioCarouselItem, isActive: boolean) => {
-    applyPortfolioSlotContent(slot, item, isActive);
-  };
-
   const fillSlots = () => {
     SLOT_OFFSETS.forEach((offset, slotIndex) => {
       const slot = slots[slotIndex];
       const item = items[wrapIndex(activeIndex + offset, total)];
       if (slot && item) {
-        setSlotContent(slot, item, offset === 0);
+        applyPortfolioSlotContent(slot, item, offset === 0);
       }
     });
 
@@ -352,156 +291,37 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
     }
   };
 
-  const hideEnterSlot = (slot: HTMLElement | null) => {
-    if (!slot) {
-      return;
-    }
-    slot.hidden = true;
-    slot.setAttribute('aria-hidden', 'true');
-  };
-
   const hideAllEnterSlots = () => {
     for (const slot of allEnterSlots) {
-      hideEnterSlot(slot);
+      slot.hidden = true;
+      slot.setAttribute('aria-hidden', 'true');
     }
   };
 
-  const showEnterSlot = (slot: HTMLElement | null, item: PortfolioCarouselItem) => {
-    if (!slot) {
+  const snapAfterAnimation = ({ final = true }: { final?: boolean } = {}) => {
+    hideAllEnterSlots();
+    swiperRoot.classList.remove('is-animating-next', 'is-animating-prev', 'is-jump-prep', 'is-jumping');
+    swiperRoot.classList.add('is-resetting');
+
+    if (final) {
+      swiperRoot.classList.add('is-final-snap');
+    }
+
+    fillSlots();
+
+    if (final) {
+      finishPortfolioReset(swiperRoot);
       return;
     }
-    setSlotContent(slot, item, false);
-    slot.hidden = false;
-    slot.setAttribute('aria-hidden', 'false');
-  };
 
-  const snapAfterAnimation = () => {
-    hideAllEnterSlots();
-    swiperRoot.classList.add('is-resetting');
-    swiperRoot.classList.remove('is-animating-next', 'is-animating-prev');
-    clearJumpStyles();
-    fillSlots();
-    finishPortfolioReset(swiperRoot);
-  };
-
-  const clearJumpStyles = () => {
-    const animatedSlots = [...slots, ...allEnterSlots];
-
-    for (const slot of animatedSlots) {
-      slot.style.transform = '';
-      slot.style.zIndex = '';
-      slot.classList.remove('is-jump-target');
-
-      const inner = slot.querySelector<HTMLElement>('.page-portfolio-slide-inner');
-      const figure = slot.querySelector<HTMLElement>('.page-portfolio-slide-figure');
-      if (inner) {
-        inner.style.width = '';
-      }
-      if (figure) {
-        figure.style.opacity = '';
-        figure.style.removeProperty('--portfolio-dim');
-      }
-    }
-
-    swiperRoot.classList.remove('is-jump-prep', 'is-jumping');
-  };
-
-  const applyJumpStylesToSlot = (
-    slot: HTMLElement,
-    endOffset: number,
-    options: { isCenter?: boolean; zIndex?: string } = {}
-  ) => {
-    slot.style.transform = transformForSlotOffset(endOffset);
-    slot.style.zIndex = options.zIndex ?? (endOffset === 0 ? '6' : '');
-    slot.classList.toggle('is-jump-target', options.isCenter ?? endOffset === 0);
-    const inner = slot.querySelector<HTMLElement>('.page-portfolio-slide-inner');
-    const figure = slot.querySelector<HTMLElement>('.page-portfolio-slide-figure');
-    setRevealWidth(inner, endOffset === 0);
-    setFigureDim(figure, endOffset);
-  };
-
-  const applyJumpEndStyles = (steps: number, direction: 'next' | 'prev') => {
-    const shift = direction === 'next' ? -steps : steps;
-
-    for (const slot of slots) {
-      const rawOffset = slot.dataset.portfolioSlot;
-      if (!rawOffset) {
-        continue;
-      }
-
-      const slotOffset = Number.parseInt(rawOffset, 10);
-      if (!Number.isFinite(slotOffset)) {
-        continue;
-      }
-
-      applyJumpStylesToSlot(slot, slotOffset + shift);
-    }
-  };
-
-  const setupJumpEnterSlots = (steps: number, direction: 'next' | 'prev') => {
-    hideAllEnterSlots();
-
-    const newActiveIndex =
-      direction === 'next'
-        ? wrapIndex(activeIndex + steps, total)
-        : wrapIndex(activeIndex - steps, total);
-
-    const enterPool = direction === 'next' ? enterRightSlots : enterLeftSlots;
-
-    for (let i = 0; i < steps; i += 1) {
-      const slot = enterPool[i];
-      if (!slot) {
-        break;
-      }
-
-      const endOffset =
-        direction === 'next' ? WINDOW_RADIUS - steps + 1 + i : -WINDOW_RADIUS + i;
-      const startOffset = direction === 'next' ? endOffset + steps : endOffset - steps;
-      const item = items[wrapIndex(newActiveIndex + endOffset, total)];
-
-      if (!item) {
-        continue;
-      }
-
-      preload(item.thumbSrc);
-      showEnterSlot(slot, item);
-      applyJumpStylesToSlot(slot, startOffset, { zIndex: '1' });
-    }
-  };
-
-  const applyJumpEnterEndStyles = (steps: number, direction: 'next' | 'prev') => {
-    const enterPool = direction === 'next' ? enterRightSlots : enterLeftSlots;
-
-    for (let i = 0; i < steps; i += 1) {
-      const slot = enterPool[i];
-      if (!slot || slot.hidden) {
-        continue;
-      }
-
-      const endOffset =
-        direction === 'next' ? WINDOW_RADIUS - steps + 1 + i : -WINDOW_RADIUS + i;
-      applyJumpStylesToSlot(slot, endOffset, { zIndex: '1' });
-    }
-  };
-
-  const runDirectJumpAnimation = async (steps: number, direction: 'next' | 'prev') => {
-    setupJumpEnterSlots(steps, direction);
-    swiperRoot.classList.add('is-jump-prep');
-    await nextFrame();
-    swiperRoot.classList.remove('is-jump-prep');
-    swiperRoot.classList.add('is-jumping');
-    await nextFrame();
-    applyJumpEndStyles(steps, direction);
-    applyJumpEnterEndStyles(steps, direction);
-    await waitTransition(track, {
-      slideClass: 'page-portfolio-slide',
-      figureClass: 'page-portfolio-slide-inner',
-      propertyNames: ['transform', 'width'],
-      timeoutMs: 700
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        swiperRoot.classList.remove('is-resetting', 'is-final-snap');
+      });
     });
   };
 
-  const runSlideAnimation = async (direction: 'next' | 'prev') => {
+  const runSlideAnimation = async (direction: 'next' | 'prev', timeoutMs: number) => {
     const prepClass = direction === 'next' ? 'is-entering-next' : 'is-entering-prev';
     const animClass = direction === 'next' ? 'is-animating-next' : 'is-animating-prev';
     const enterSlot = direction === 'next' ? enterRightSlots[0] : enterLeftSlots[0];
@@ -511,12 +331,15 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
         : wrapIndex(activeIndex - INCOMING_OFFSET, total);
     const incoming = items[incomingIndex];
 
-    if (!incoming) {
+    if (!incoming || !enterSlot) {
       return;
     }
 
     hideAllEnterSlots();
-    showEnterSlot(enterSlot, incoming);
+    applyPortfolioSlotContent(enterSlot, incoming, false);
+    enterSlot.hidden = false;
+    enterSlot.setAttribute('aria-hidden', 'false');
+
     swiperRoot.classList.add(prepClass);
     await nextFrame();
     swiperRoot.classList.remove(prepClass);
@@ -525,7 +348,7 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
       slideClass: 'page-portfolio-slide',
       figureClass: 'page-portfolio-slide-inner',
       propertyNames: ['transform', 'width'],
-      timeoutMs: 700
+      timeoutMs
     });
   };
 
@@ -556,16 +379,26 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
     }
 
     const steps = countSteps(activeIndex, nextIndex, total);
+    const slideDirection = direction > 0 ? 'next' : 'prev';
+    const chained = steps > 1;
 
-    if (steps === 1) {
-      await runSlideAnimation(direction > 0 ? 'next' : 'prev');
-    } else {
-      await runDirectJumpAnimation(steps, direction > 0 ? 'next' : 'prev');
+    if (chained) {
+      swiperRoot.style.setProperty('--portfolio-slide-duration', `${CHAINED_SLIDE_DURATION_MS}ms`);
     }
 
-    activeIndex = nextIndex;
-    snapAfterAnimation();
-    isAnimating = false;
+    try {
+      for (let step = 0; step < steps; step += 1) {
+        await runSlideAnimation(
+          slideDirection,
+          chained ? CHAINED_SLIDE_TIMEOUT_MS : SINGLE_SLIDE_TIMEOUT_MS
+        );
+        activeIndex = wrapIndex(activeIndex + direction, total);
+        snapAfterAnimation({ final: step === steps - 1 });
+      }
+    } finally {
+      swiperRoot.style.removeProperty('--portfolio-slide-duration');
+      isAnimating = false;
+    }
   };
 
   const goTo = (index: number) => {
@@ -610,7 +443,7 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
   preloadAround(activeIndex);
 
   if (!alreadyHydrated) {
-    swiperRoot.classList.add('is-resetting');
+    swiperRoot.classList.add('is-resetting', 'is-final-snap');
     fillSlots();
     swiperRoot.dataset.portfolioHydrated = 'true';
     finishPortfolioReset(swiperRoot);
@@ -624,17 +457,8 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
     window.removeEventListener('resize', onResize);
     scroller.removeEventListener('keydown', keys.onKeyDown);
     wheel.destroy();
-    swiperRoot.classList.remove(
-      'is-entering-next',
-      'is-entering-prev',
-      'is-animating-next',
-      'is-animating-prev',
-      'is-jump-prep',
-      'is-jumping',
-      'is-resetting',
-      'is-edge-reveal'
-    );
-    clearJumpStyles();
+    swiperRoot.classList.remove(...ANIMATION_CLASSES);
+    swiperRoot.style.removeProperty('--portfolio-slide-duration');
     hideAllEnterSlots();
   };
 }

@@ -8,8 +8,6 @@ import { prefersReducedMotion } from './exhibitions-swiper-shared.ts';
 import { initExhibitionsFullSwiper } from './exhibitions-full-swiper.ts';
 import { initExhibitionsThumbnailSwiper } from './exhibitions-thumbnail-swiper.ts';
 
-const initializedPages = new WeakSet<HTMLElement>();
-
 let swiperCleanup: (() => void) | null = null;
 let currentViewMode: ExhibitionsViewMode | null = null;
 let isViewTransitioning = false;
@@ -54,16 +52,20 @@ function destroySwiper(): void {
 }
 
 function initSwiperForMode(mode: ExhibitionsViewMode, root: ParentNode): void {
-  if (mode === 'full') {
-    swiperCleanup = initExhibitionsFullSwiper(root);
-    const scroller = root.querySelector<HTMLElement>('[data-exhibitions-full-scroller]');
-    scroller?.focus({ preventScroll: true });
-    return;
-  }
+  const start = () => {
+    if (mode === 'full') {
+      swiperCleanup = initExhibitionsFullSwiper(root);
+      return;
+    }
 
-  swiperCleanup = initExhibitionsThumbnailSwiper(root);
-  const scroller = root.querySelector<HTMLElement>('[data-exhibitions-thumbnail-scroller]');
-  scroller?.focus({ preventScroll: true });
+    swiperCleanup = initExhibitionsThumbnailSwiper(root);
+    const scroller = root.querySelector<HTMLElement>('[data-exhibitions-thumbnail-scroller]');
+    scroller?.focus({ preventScroll: true });
+  };
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(start);
+  });
 }
 
 function waitViewTransition(page: HTMLElement, mode: ExhibitionsViewMode): Promise<void> {
@@ -110,7 +112,8 @@ async function setViewMode(
     return;
   }
 
-  const shouldAnimate = transition && !prefersReducedMotion() && currentViewMode !== null;
+  const previousMode = currentViewMode;
+  const shouldAnimate = transition && !prefersReducedMotion() && previousMode !== null;
 
   if (isViewTransitioning) {
     return;
@@ -119,17 +122,27 @@ async function setViewMode(
   isViewTransitioning = shouldAnimate;
   page.classList.toggle('is-view-no-transition', !shouldAnimate);
 
+  if (shouldAnimate && previousMode === 'full') {
+    root.querySelector('[data-exhibitions-full]')?.classList.add('is-hiding');
+  }
+
+  if (shouldAnimate && previousMode === 'thumbnail') {
+    root.querySelector('[data-exhibitions-thumbnail]')?.classList.add('is-hiding');
+  }
+
   syncViewModeAttributes(mode, page);
   setStoredViewMode(mode);
   updateToggleButtons(mode, root);
 
-  destroySwiper();
-  initSwiperForMode(mode, root);
-  currentViewMode = mode;
-
   if (shouldAnimate) {
     await waitViewTransition(page, mode);
   }
+
+  destroySwiper();
+  root.querySelector('[data-exhibitions-full]')?.classList.remove('is-hiding');
+  root.querySelector('[data-exhibitions-thumbnail]')?.classList.remove('is-hiding');
+  initSwiperForMode(mode, root);
+  currentViewMode = mode;
 
   page.classList.remove('is-view-no-transition');
   isViewTransitioning = false;
@@ -139,15 +152,21 @@ export function destroyExhibitionsView(): void {
   destroySwiper();
   currentViewMode = null;
   isViewTransitioning = false;
+
+  document.querySelectorAll<HTMLElement>('[data-exhibitions-page]').forEach((page) => {
+    delete page.dataset.exhibitionsViewInitialized;
+    page.querySelector('[data-exhibitions-full]')?.classList.remove('is-ready', 'is-hiding');
+    document.documentElement.classList.add('exhibitions-list-pending');
+  });
 }
 
 export function initExhibitionsView(root: ParentNode = document): void {
   const page = root.querySelector<HTMLElement>('[data-exhibitions-page]');
-  if (!page || initializedPages.has(page)) {
+  if (!page || page.dataset.exhibitionsViewInitialized === 'true') {
     return;
   }
 
-  initializedPages.add(page);
+  page.dataset.exhibitionsViewInitialized = 'true';
 
   const initialMode = getStoredExhibitionsViewMode();
   void setViewMode(page, initialMode, root, { transition: false });

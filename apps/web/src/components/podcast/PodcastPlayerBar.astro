@@ -21,15 +21,13 @@ const publishDate = formatPodcastDate(podcast.publishDate);
 const slug = podcast.slug?.current;
 const detailHref = slug ? `/podcasts/${slug}` : undefined;
 const hasAudio = Boolean(podcast.audioFileUrl);
-const playerBackgroundSrc =
-  variant === 'detail'
-    ? urlForSanityImage(podcast.playerBackgroundImage, { width: 1600 })
-    : undefined;
+const playerBackgroundSrc = urlForSanityImage(podcast.playerBackgroundImage, { width: 1600 });
 const playerBackgroundAlt = imageAlt(podcast.playerBackgroundImage, title);
 ---
 
 <div
   class:list={['podcast-player-bar', { 'podcast-player-bar--detail': variant === 'detail' }]}
+  transition:animate="none"
   data-podcast-row
   data-audio-src={podcast.audioFileUrl ?? ''}
   data-podcast-id={podcast._id}

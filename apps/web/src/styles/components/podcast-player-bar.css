@@ -19,7 +19,14 @@
   text-transform: uppercase;
   border-radius: var(--podcast-bar-radius);
   box-shadow: var(--podcast-bar-inset-shadow);
-  transition: opacity var(--transition-time) var(--transition-effect);
+  background: transparent;
+  transition:
+    opacity var(--transition-time) var(--transition-effect),
+    background var(--transition-time) var(--transition-effect);
+}
+
+.podcast-player-bar.is-playing {
+  background: linear-gradient(270deg, rgba(85, 85, 85, 0) 0%, #4000FF 100%);
 }
 
 .podcast-player-bar:not(.is-active) {
@@ -153,12 +160,9 @@
   outline-offset: 3px;
 }
 
-/* Detail variant — bold type + optional bar background image */
+/* Detail variant — bold type */
 
 .podcast-player-bar--detail {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
   font-weight: var(--font-weight-bold);
   opacity: 1;
 }
@@ -167,7 +171,15 @@
   opacity: 1;
 }
 
-.podcast-player-bar--detail:has(.podcast-player-bar__bg)::after {
+/* Bar background image — visible while playing (index + single) */
+
+.podcast-player-bar:has(.podcast-player-bar__bg) {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.podcast-player-bar.is-playing:has(.podcast-player-bar__bg)::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -183,6 +195,12 @@
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-time) var(--transition-effect);
+}
+
+.podcast-player-bar.is-playing .podcast-player-bar__bg {
+  opacity: 1;
 }
 
 .podcast-player-bar__bg img {
@@ -202,7 +220,7 @@
   background: var(--podcast-bar-bg-overlay);
 }
 
-.podcast-player-bar--detail > :not(.podcast-player-bar__bg) {
+.podcast-player-bar:has(.podcast-player-bar__bg) > :not(.podcast-player-bar__bg) {
   position: relative;
   z-index: 1;
 }

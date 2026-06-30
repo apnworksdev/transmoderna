@@ -54,14 +54,21 @@ export function initPodcastsPlayer(root: ParentNode = document): PlayerCleanup |
     elapsed: row.querySelector<HTMLElement>('[data-podcast-elapsed]')
   });
 
+  const setRowPlaybackState = (entry: HTMLElement, row: HTMLElement | null) => {
+    const isActive = entry === row;
+    const isPlaying = isActive && !audio.paused;
+
+    entry.classList.toggle('is-active', isActive);
+    entry.classList.toggle('is-playing', isPlaying);
+
+    const { playToggle } = getRowControls(entry);
+    if (playToggle) {
+      setPlayToggleLabel(playToggle, isPlaying);
+    }
+  };
+
   const setActiveRow = (row: HTMLElement | null) => {
-    rows.forEach((entry) => {
-      entry.classList.toggle('is-active', entry === row);
-      const { playToggle } = getRowControls(entry);
-      if (playToggle) {
-        setPlayToggleLabel(playToggle, entry === row && !audio.paused);
-      }
-    });
+    rows.forEach((entry) => setRowPlaybackState(entry, row));
     activeRow = row;
   };
 
@@ -102,12 +109,7 @@ export function initPodcastsPlayer(root: ParentNode = document): PlayerCleanup |
   };
 
   const syncPlaybackLabels = () => {
-    rows.forEach((row) => {
-      const { playToggle } = getRowControls(row);
-      if (playToggle) {
-        setPlayToggleLabel(playToggle, row === activeRow && !audio.paused);
-      }
-    });
+    rows.forEach((row) => setRowPlaybackState(row, activeRow));
 
     if (miniPlayToggle) {
       setMiniPlayToggleLabel(miniPlayToggle, !audio.paused);
@@ -254,6 +256,26 @@ export function initPodcastsPlayer(root: ParentNode = document): PlayerCleanup |
     updateProgressUi();
   };
 
+  const onPlaybackChange = () => {
+    syncPlaybackLabels();
+    updateProgressUi();
+  };
+
+  const resetPlaybackState = () => {
+    audio.pause();
+    audio.removeAttribute('src');
+    audio.load();
+    activeRow = null;
+    isSeeking = false;
+    rows.forEach((entry) => setRowPlaybackState(entry, null));
+
+    if (miniPlayToggle) {
+      setMiniPlayToggleLabel(miniPlayToggle, false);
+    }
+
+    updateProgressUi();
+  };
+
   const onShareClick = async () => {
     const shareData = {
       title: document.title,
@@ -341,20 +363,35 @@ export function initPodcastsPlayer(root: ParentNode = document): PlayerCleanup |
   audio.addEventListener('timeupdate', onTimeUpdate);
   audio.addEventListener('loadedmetadata', onLoadedMetadata);
   audio.addEventListener('ended', onEnded);
+  audio.addEventListener('play', onPlaybackChange);
+  audio.addEventListener('pause', onPlaybackChange);
 
-  updateProgressUi();
+  resetPlaybackState();
 
   return () => {
-    audio.pause();
+    resetPlaybackState();
     audio.removeEventListener('timeupdate', onTimeUpdate);
     audio.removeEventListener('loadedmetadata', onLoadedMetadata);
     audio.removeEventListener('ended', onEnded);
+    audio.removeEventListener('play', onPlaybackChange);
+    audio.removeEventListener('pause', onPlaybackChange);
     playToggleHandlers.forEach((cleanup) => cleanup());
     delete playerRoot.dataset.podcastInit;
   };
 }
 
 export function destroyPodcastsPlayer(root: ParentNode = document): void {
-  const audio = root.querySelector<HTMLAudioElement>('[data-podcast-audio]');
+  const playerRoot = root.querySelector<HTMLElement>('[data-podcast-root]');
+  const audio = playerRoot?.querySelector<HTMLAudioElement>('[data-podcast-audio]');
+
   audio?.pause();
+
+  if (audio) {
+    audio.removeAttribute('src');
+    audio.load();
+  }
+
+  playerRoot?.querySelectorAll<HTMLElement>('[data-podcast-row]').forEach((row) => {
+    row.classList.remove('is-active', 'is-playing');
+  });
 }

@@ -2,3 +2,5 @@
 @import './common/variables.css';
 @import './common/globals.css';
 @import './common/main.css';
+@import './components/podcast-player-bar.css';
+@import './components/podcast-mini-player.css';
