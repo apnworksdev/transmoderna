@@ -421,8 +421,8 @@ html[data-exhibitions-view='thumbnail'] .page-exhibitions-thumbnail,
     visibility 0s;
 }
 
-html[data-exhibitions-view='full'] .page-exhibitions-full,
-.page-exhibitions[data-exhibitions-view='full'] .page-exhibitions-full {
+html[data-exhibitions-view='full'] .page-exhibitions-full.is-ready,
+.page-exhibitions[data-exhibitions-view='full'] .page-exhibitions-full.is-ready {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
@@ -549,6 +549,7 @@ html[data-exhibitions-view='full'] .page-exhibitions,
   border: 0.5px solid transparent;
   box-sizing: border-box;
   visibility: hidden;
+  opacity: 0;
 }
 
 .page-exhibitions-full.is-ready .page-exhibitions-full-slide {

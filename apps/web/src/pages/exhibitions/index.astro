@@ -73,8 +73,25 @@ const fullLoopItems =
     }
   </script>
   <style is:inline>
-    html.exhibitions-list-pending .page-exhibitions-full-scroller {
+    .page-exhibitions-full {
+      opacity: 0;
       visibility: hidden;
+      pointer-events: none;
+    }
+
+    .page-exhibitions-full-slide {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .page-exhibitions-full.is-ready {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .page-exhibitions-full.is-ready .page-exhibitions-full-slide {
+      visibility: visible;
     }
   </style>
 
