@@ -16,9 +16,15 @@ function getShopRoot(): HTMLElement | null {
   return document.querySelector('[data-shop-root]');
 }
 
-function readVariants(root: HTMLElement): VariantPayload[] {
-  const buy = root.querySelector<HTMLElement>('[data-product-buy]');
-  const raw = buy?.dataset.productVariants;
+export function resolveBuyRoot(element: HTMLElement): HTMLElement | null {
+  if (element.matches('[data-product-buy]')) {
+    return element;
+  }
+  return element.closest('[data-product-buy]');
+}
+
+function readVariants(buyRoot: HTMLElement): VariantPayload[] {
+  const raw = buyRoot.dataset.productVariants;
   if (!raw) return [];
 
   try {
@@ -29,13 +35,13 @@ function readVariants(root: HTMLElement): VariantPayload[] {
   }
 }
 
-function getDefaultCurrency(root: HTMLElement): string {
-  return root.querySelector<HTMLElement>('[data-product-buy]')?.dataset.defaultCurrency ?? 'EUR';
+function getDefaultCurrency(buyRoot: HTMLElement): string {
+  return buyRoot.dataset.defaultCurrency ?? 'EUR';
 }
 
-function getSelectedOptionsMap(root: HTMLElement): Map<string, string> {
+function getSelectedOptionsMap(buyRoot: HTMLElement): Map<string, string> {
   const map = new Map<string, string>();
-  root.querySelectorAll<HTMLButtonElement>('[data-option-value].is-selected').forEach((button) => {
+  buyRoot.querySelectorAll<HTMLButtonElement>('[data-option-value].is-selected').forEach((button) => {
     const name = button.dataset.optionGroup;
     const value = button.dataset.optionValue;
     if (name && value) {
@@ -45,10 +51,10 @@ function getSelectedOptionsMap(root: HTMLElement): Map<string, string> {
   return map;
 }
 
-function syncVariantRadio(root: HTMLElement, variant?: SelectableVariant): void {
+function syncVariantRadio(buyRoot: HTMLElement, variant?: SelectableVariant): void {
   if (!variant) return;
 
-  root.querySelectorAll<HTMLInputElement>('[data-variant-radio]').forEach((radio) => {
+  buyRoot.querySelectorAll<HTMLInputElement>('[data-variant-radio]').forEach((radio) => {
     radio.checked = radio.dataset.variantId === variant.id;
   });
 }
@@ -88,17 +94,17 @@ function addButtonLabel(
   return defaultLabel;
 }
 
-export function updateVariantUI(root: HTMLElement): void {
-  const variants = readVariants(root);
-  const selections = getSelectedOptionsMap(root);
-  const currency = getDefaultCurrency(root);
+export function updateVariantUI(buyRoot: HTMLElement): void {
+  const variants = readVariants(buyRoot);
+  const selections = getSelectedOptionsMap(buyRoot);
+  const currency = getDefaultCurrency(buyRoot);
   const fullVariant = findVariantBySelections(variants, selections) as VariantPayload | undefined;
   const displayVariant = findDisplayVariantBySelections(variants, selections) as
     | VariantPayload
     | undefined;
-  const priceEl = root.querySelector('[data-variant-price]');
-  const addBtn = root.querySelector<HTMLButtonElement>('[data-add-to-cart]');
-  const qtyValue = root.querySelector('[data-qty-value]');
+  const priceEl = buyRoot.querySelector('[data-variant-price]');
+  const addBtn = buyRoot.querySelector<HTMLButtonElement>('[data-add-to-cart]');
+  const qtyValue = buyRoot.querySelector('[data-qty-value]');
 
   if (displayVariant && typeof displayVariant.price === 'number' && priceEl) {
     priceEl.textContent = formatPrice(
@@ -107,14 +113,14 @@ export function updateVariantUI(root: HTMLElement): void {
     );
   }
 
-  syncVariantRadio(root, fullVariant);
+  syncVariantRadio(buyRoot, fullVariant);
 
   if (addBtn) {
     addBtn.disabled = !fullVariant?.availableForSale;
     addBtn.textContent = addButtonLabel(addBtn, variants, fullVariant);
   }
 
-  root.querySelectorAll<HTMLButtonElement>('[data-option-value]').forEach((button) => {
+  buyRoot.querySelectorAll<HTMLButtonElement>('[data-option-value]').forEach((button) => {
     const optionName = button.dataset.optionGroup;
     const optionValue = button.dataset.optionValue;
     if (!optionName || !optionValue) return;
@@ -137,12 +143,90 @@ function clampQty(value: number, max = 99): number {
   return Math.min(max, Math.max(1, value));
 }
 
-let cleanup: (() => void) | null = null;
-let activeQty = 1;
+function wireProductBuyPanel(
+  buyRoot: HTMLElement,
+  listeners: Array<() => void>,
+  initialQty = 1
+): void {
+  let activeQty = initialQty;
+  const qtyValue = buyRoot.querySelector('[data-qty-value]');
+  const minus = buyRoot.querySelector<HTMLButtonElement>('[data-qty-minus]');
+  const plus = buyRoot.querySelector<HTMLButtonElement>('[data-qty-plus]');
+  const addBtn = buyRoot.querySelector<HTMLButtonElement>('[data-add-to-cart]');
+  const optionButtons = buyRoot.querySelectorAll<HTMLButtonElement>('[data-option-value]');
+
+  const getMaxQty = () => {
+    const variants = readVariants(buyRoot);
+    const selections = getSelectedOptionsMap(buyRoot);
+    const fullVariant = findVariantBySelections(variants, selections) as VariantPayload | undefined;
+    return maxQtyForVariant(fullVariant);
+  };
+
+  const setQty = (next: number) => {
+    activeQty = clampQty(next, getMaxQty());
+    if (qtyValue) qtyValue.textContent = String(activeQty);
+    if (addBtn) addBtn.dataset.qty = String(activeQty);
+  };
+
+  if (minus) {
+    const onMinus = (event: Event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setQty(activeQty - 1);
+    };
+    minus.addEventListener('click', onMinus);
+    listeners.push(() => minus.removeEventListener('click', onMinus));
+  }
+
+  if (plus) {
+    const onPlus = (event: Event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setQty(activeQty + 1);
+    };
+    plus.addEventListener('click', onPlus);
+    listeners.push(() => plus.removeEventListener('click', onPlus));
+  }
+
+  optionButtons.forEach((button) => {
+    const onClick = (event: Event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (button.disabled) return;
+
+      const group = button.dataset.optionGroup;
+      if (!group) return;
+
+      buyRoot.querySelectorAll<HTMLButtonElement>(`[data-option-group="${group}"]`).forEach((item) => {
+        item.classList.remove('is-selected');
+        item.setAttribute('aria-pressed', 'false');
+      });
+
+      button.classList.add('is-selected');
+      button.setAttribute('aria-pressed', 'true');
+      updateVariantUI(buyRoot);
+      setQty(activeQty);
+    };
+
+    button.addEventListener('click', onClick);
+    listeners.push(() => button.removeEventListener('click', onClick));
+  });
+
+  updateVariantUI(buyRoot);
+  setQty(1);
+}
+
+let productCleanup: (() => void) | null = null;
+let cardCleanup: (() => void) | null = null;
 
 export function destroyShopProduct(): void {
-  cleanup?.();
-  cleanup = null;
+  productCleanup?.();
+  productCleanup = null;
+}
+
+export function destroyShopCardQuickBuy(): void {
+  cardCleanup?.();
+  cardCleanup = null;
 }
 
 export function initShopProduct(): (() => void) | null {
@@ -155,62 +239,14 @@ export function initShopProduct(): (() => void) | null {
     console.warn('[shop-product] Some product variants were not loaded from Shopify.');
   }
 
-  const qtyValue = root.querySelector('[data-qty-value]');
-  const minus = root.querySelector<HTMLButtonElement>('[data-qty-minus]');
-  const plus = root.querySelector<HTMLButtonElement>('[data-qty-plus]');
-  const addBtn = root.querySelector<HTMLButtonElement>('[data-add-to-cart]');
+  const buyRoot = root.querySelector<HTMLElement>('[data-product-buy]');
+  if (!buyRoot) return null;
+
   const hero = root.querySelector<HTMLImageElement>('[data-product-hero]');
   const thumbs = root.querySelectorAll<HTMLButtonElement>('[data-product-thumb]');
-  const optionButtons = root.querySelectorAll<HTMLButtonElement>('[data-option-value]');
-
-  const getMaxQty = () => {
-    const variants = readVariants(root);
-    const selections = getSelectedOptionsMap(root);
-    const fullVariant = findVariantBySelections(variants, selections) as VariantPayload | undefined;
-    return maxQtyForVariant(fullVariant);
-  };
-
-  const setQty = (next: number) => {
-    activeQty = clampQty(next, getMaxQty());
-    if (qtyValue) qtyValue.textContent = String(activeQty);
-    if (addBtn) addBtn.dataset.qty = String(activeQty);
-  };
-
   const listeners: Array<() => void> = [];
 
-  if (minus) {
-    const onMinus = () => setQty(activeQty - 1);
-    minus.addEventListener('click', onMinus);
-    listeners.push(() => minus.removeEventListener('click', onMinus));
-  }
-
-  if (plus) {
-    const onPlus = () => setQty(activeQty + 1);
-    plus.addEventListener('click', onPlus);
-    listeners.push(() => plus.removeEventListener('click', onPlus));
-  }
-
-  optionButtons.forEach((button) => {
-    const onClick = () => {
-      if (button.disabled) return;
-
-      const group = button.dataset.optionGroup;
-      if (!group) return;
-
-      root.querySelectorAll<HTMLButtonElement>(`[data-option-group="${group}"]`).forEach((item) => {
-        item.classList.remove('is-selected');
-        item.setAttribute('aria-pressed', 'false');
-      });
-
-      button.classList.add('is-selected');
-      button.setAttribute('aria-pressed', 'true');
-      updateVariantUI(root);
-      setQty(activeQty);
-    };
-
-    button.addEventListener('click', onClick);
-    listeners.push(() => button.removeEventListener('click', onClick));
-  });
+  wireProductBuyPanel(buyRoot, listeners);
 
   thumbs.forEach((thumb) => {
     const onClick = () => {
@@ -226,38 +262,69 @@ export function initShopProduct(): (() => void) | null {
     listeners.push(() => thumb.removeEventListener('click', onClick));
   });
 
-  updateVariantUI(root);
-  setQty(1);
-
-  cleanup = () => {
+  productCleanup = () => {
     listeners.forEach((remove) => remove());
   };
 
-  return cleanup;
+  return productCleanup;
 }
 
-export function getSelectedQuantity(root: HTMLElement): number {
-  const addBtn = root.querySelector<HTMLButtonElement>('[data-add-to-cart]');
-  const variants = readVariants(root);
-  const selections = getSelectedOptionsMap(root);
+export function initShopCardQuickBuy(): (() => void) | null {
+  destroyShopCardQuickBuy();
+
+  const root = getShopRoot();
+  if (!root || root.dataset.shopPage !== 'index') return null;
+
+  const listeners: Array<() => void> = [];
+
+  root.querySelectorAll<HTMLElement>('[data-shop-product-card]').forEach((card) => {
+    const buyRoot = card.querySelector<HTMLElement>('[data-product-buy]');
+    if (!buyRoot) return;
+
+    wireProductBuyPanel(buyRoot, listeners);
+
+    const onPanelClick = (event: Event) => {
+      event.stopPropagation();
+    };
+    buyRoot.addEventListener('click', onPanelClick);
+    listeners.push(() => buyRoot.removeEventListener('click', onPanelClick));
+  });
+
+  cardCleanup = () => {
+    listeners.forEach((remove) => remove());
+  };
+
+  return cardCleanup;
+}
+
+export function getSelectedQuantity(buyRoot: HTMLElement): number {
+  const addBtn = buyRoot.querySelector<HTMLButtonElement>('[data-add-to-cart]');
+  const variants = readVariants(buyRoot);
+  const selections = getSelectedOptionsMap(buyRoot);
   const fullVariant = findVariantBySelections(variants, selections) as VariantPayload | undefined;
   const maxQty = maxQtyForVariant(fullVariant);
   const fromDataset = Number.parseInt(addBtn?.dataset.qty ?? '1', 10);
   return clampQty(Number.isFinite(fromDataset) ? fromDataset : 1, maxQty);
 }
 
-export function getSelectedVariantId(root: HTMLElement): string | undefined {
-  const checked = root.querySelector<HTMLInputElement>('[data-variant-radio]:checked');
+export function getSelectedVariantId(buyRoot: HTMLElement): string | undefined {
+  const checked = buyRoot.querySelector<HTMLInputElement>('[data-variant-radio]:checked');
   if (checked?.dataset.variantId) {
     return checked.dataset.variantId;
   }
 
-  const variants = readVariants(root);
-  const selections = getSelectedOptionsMap(root);
+  const variants = readVariants(buyRoot);
+  const selections = getSelectedOptionsMap(buyRoot);
   return findVariantBySelections(variants, selections)?.id;
 }
 
-export function refreshProductBuyUI(root?: HTMLElement): void {
-  const target = root ?? getShopRoot();
-  if (target) updateVariantUI(target);
+export function refreshProductBuyUI(buyRoot?: HTMLElement): void {
+  if (buyRoot) {
+    updateVariantUI(buyRoot);
+    return;
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-product-buy]').forEach((element) => {
+    updateVariantUI(element);
+  });
 }

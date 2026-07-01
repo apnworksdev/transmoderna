@@ -1,0 +1,130 @@
+---
+import { parsePriceAmount } from '../../lib/shop-format';
+import {
+  getDefaultVariant,
+  getInitialOptionSelections,
+  resolveProductOptions,
+  type ProductOption
+} from '../../lib/shop-options';
+import type { StorefrontVariant } from '../../lib/shopify-storefront';
+import { isStorefrontConfigured } from '../../lib/shopify-storefront';
+
+interface Props {
+  variants: StorefrontVariant[];
+  options?: ProductOption[];
+  buyId: string;
+}
+
+const { variants, options: optionsProp, buyId } = Astro.props;
+const options = resolveProductOptions(optionsProp, variants);
+const shopifyEnabled = isStorefrontConfigured();
+const defaultVariant = getDefaultVariant(variants);
+const initialSelections = getInitialOptionSelections(options, variants, defaultVariant);
+const defaultCurrency = defaultVariant?.price?.currencyCode ?? 'EUR';
+const allSoldOut = variants.length > 0 && variants.every((variant) => !variant.availableForSale);
+const addLabel = !shopifyEnabled
+  ? 'Unavailable'
+  : variants.length === 0
+    ? 'Unavailable'
+    : allSoldOut
+      ? 'Sold out'
+      : 'Add to cart';
+const variantsPayload = JSON.stringify(
+  variants.map((variant) => ({
+    id: variant.id,
+    title: variant.title,
+    selectedOptions: variant.selectedOptions ?? [],
+    price: parsePriceAmount(variant.price?.amount),
+    currencyCode: variant.price?.currencyCode ?? defaultCurrency,
+    quantityAvailable: variant.quantityAvailable ?? null,
+    availableForSale: variant.availableForSale
+  }))
+);
+---
+
+<div
+  class="page-shop-card-quickbuy"
+  data-product-buy
+  data-product-variants={variantsPayload}
+  data-default-currency={defaultCurrency}
+  transition:animate="none"
+>
+  {
+    options.length > 0 ? (
+      <div class="page-shop-card-quickbuy-options" data-product-options>
+        {options.map((option) => (
+          <div class="page-shop-card-quickbuy-option" data-option-name={option.name}>
+            <div
+              class="page-shop-card-quickbuy-option-buttons"
+              role="group"
+              aria-label={`Select ${option.name}`}
+            >
+              {option.values.map((value) => {
+                const isSelected = initialSelections.get(option.name) === value;
+                return (
+                  <button
+                    type="button"
+                    class:list={['page-shop-buy-option-btn', { 'is-selected': isSelected }]}
+                    data-option-value={value}
+                    data-option-group={option.name}
+                    aria-pressed={isSelected ? 'true' : 'false'}
+                  >
+                    {value}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : null
+  }
+
+  <div class="page-shop-card-quickbuy-footer">
+    <div class="page-shop-buy-qty">
+      <div class="page-shop-buy-qty-controls page-shop-card-quickbuy-qty-controls">
+        <button type="button" class="page-shop-buy-qty-btn" data-qty-minus aria-label="Decrease quantity">
+          −
+        </button>
+        <span class="page-shop-buy-qty-value" data-qty-value>1</span>
+        <button type="button" class="page-shop-buy-qty-btn" data-qty-plus aria-label="Increase quantity">
+          +
+        </button>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="page-shop-buy-add page-shop-card-quickbuy-add"
+      data-add-to-cart
+      data-qty="1"
+      data-default-label="Add to cart"
+      disabled={!shopifyEnabled || variants.length === 0 || !defaultVariant?.availableForSale}
+    >
+      {addLabel}
+    </button>
+  </div>
+
+  <div class="page-shop-buy-variants-hidden" aria-hidden="true">
+    {
+      variants.map((variant, idx) => {
+        const price = parsePriceAmount(variant.price?.amount);
+        const isDefault = variant.id === defaultVariant?.id || (idx === 0 && !defaultVariant);
+        return (
+          <input
+            type="radio"
+            name={`variant-${buyId}`}
+            value={variant.id}
+            data-variant-radio
+            data-variant-id={variant.id}
+            data-variant-title={variant.title}
+            data-price={typeof price === 'number' ? String(price) : ''}
+            data-currency={variant.price?.currencyCode ?? defaultCurrency}
+            checked={isDefault}
+            disabled={!variant.availableForSale}
+          />
+        );
+      })
+    }
+  </div>
+</div>

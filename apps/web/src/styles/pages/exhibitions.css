@@ -542,7 +542,8 @@ html[data-exhibitions-view='full'] .page-exhibitions,
   display: flex;
   align-items: center;
   justify-content: center;
-  width: calc(100% - (var(--margin) * 2));
+  max-width: calc(100% - (var(--margin) * 2));
+  width: auto;
   height: 88px;
   padding: 0 var(--margin);
   border: 0.5px solid transparent;
@@ -550,7 +551,7 @@ html[data-exhibitions-view='full'] .page-exhibitions,
   visibility: hidden;
 }
 
-.page-exhibitions-full.is-ready .page-exhibitions-full-slide:not(.is-hidden) {
+.page-exhibitions-full.is-ready .page-exhibitions-full-slide {
   visibility: visible;
 }
 
@@ -562,7 +563,7 @@ html[data-exhibitions-view='full'] .page-exhibitions,
 }
 
 .page-exhibitions-full-slide.is-hidden {
-  visibility: hidden;
+  opacity: 0;
   pointer-events: none;
 }
 
@@ -592,11 +593,16 @@ html[data-exhibitions-view='full'] .page-exhibitions,
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .page-exhibitions-full-slide.is-active {
-    transition:
-      padding 180ms var(--ease),
-      border-color 180ms var(--ease),
-      backdrop-filter 180ms var(--ease);
+  .page-exhibitions-full.is-ready:not(.is-scrolling) .page-exhibitions-full-slide {
+    transition-property: opacity;
+    transition-duration: 280ms;
+    transition-timing-function: var(--ease);
+  }
+
+  .page-exhibitions-full.is-ready:not(.is-scrolling) .page-exhibitions-full-slide.is-active {
+    transition-property: opacity, padding, border-color, backdrop-filter;
+    transition-duration: 280ms, 180ms, 180ms, 180ms;
+    transition-timing-function: var(--ease), var(--ease), var(--ease), var(--ease);
   }
 }
 

@@ -1,6 +1,11 @@
 import { CART_LINES_FIRST } from '../lib/shopify-storefront';
 import { formatPrice, parsePriceAmount } from '../lib/shop-format';
-import { getSelectedQuantity, getSelectedVariantId, refreshProductBuyUI } from './shop-product';
+import {
+  getSelectedQuantity,
+  getSelectedVariantId,
+  refreshProductBuyUI,
+  resolveBuyRoot
+} from './shop-product';
 
 const API_VERSION = '2024-01';
 const CART_KEY = 'transmoderna_shopify_cart_id';
@@ -220,8 +225,8 @@ function cartLinesRemoveMutation(marketCountry: string): string {
   }`;
 }
 
-function resolveVariantGid(root: HTMLElement): string | undefined {
-  return getSelectedVariantId(root);
+function resolveVariantGid(buyRoot: HTMLElement): string | undefined {
+  return getSelectedVariantId(buyRoot);
 }
 
 function updateCartBadge(totalQuantity?: number): void {
@@ -494,18 +499,22 @@ export function initShopCart(): (() => void) | null {
   root.querySelectorAll('[data-add-to-cart]').forEach((btn) => {
     const onClick = async (event: Event) => {
       event.preventDefault();
+      event.stopPropagation();
       if (!(btn instanceof HTMLButtonElement) || btn.disabled) return;
 
-      const statusEl = root.querySelector('[data-add-status]');
+      const buyRoot = resolveBuyRoot(btn);
+      if (!buyRoot) return;
+
+      const statusEl = buyRoot.querySelector('[data-add-status]');
       const prev = btn.dataset.defaultLabel ?? btn.textContent ?? 'Add to cart';
       btn.disabled = true;
       btn.textContent = 'Adding…';
 
       try {
-        const merchandiseId = resolveVariantGid(root);
+        const merchandiseId = resolveVariantGid(buyRoot);
         if (!merchandiseId) throw new Error('Select a valid variant');
 
-        const quantity = getSelectedQuantity(root);
+        const quantity = getSelectedQuantity(buyRoot);
         const cart = await getOrCreateCart(config);
         const data = await storefrontFetch(config, cartLinesAddMutation(config.marketCountry), {
           cartId: cart.id,
@@ -527,7 +536,7 @@ export function initShopCart(): (() => void) | null {
         }
       } finally {
         setTimeout(() => {
-          refreshProductBuyUI(root);
+          refreshProductBuyUI(buyRoot);
           if (btn.textContent === 'Adding…' || btn.textContent === 'Added' || btn.textContent === 'Error') {
             btn.textContent = prev;
           }

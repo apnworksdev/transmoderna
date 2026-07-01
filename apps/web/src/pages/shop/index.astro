@@ -3,11 +3,23 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import ShopBackground from '../../components/shop/ShopBackground.astro';
 import ShopBottomBar from '../../components/shop/ShopBottomBar.astro';
 import ShopProductCard from '../../components/shop/ShopProductCard.astro';
-import { getShopPage } from '../../lib/shop';
+import { getShopPage, productHandle } from '../../lib/shop';
+import { fetchProductStorefrontDataByHandle } from '../../lib/shopify-storefront';
 import '../../styles/pages/shop.css';
 
 const shop = await getShopPage();
 const products = shop?.products ?? [];
+const productCards = await Promise.all(
+  products.map(async (product) => {
+    const handle = productHandle(product);
+    const storefront = handle ? await fetchProductStorefrontDataByHandle(handle) : null;
+    return {
+      product,
+      variants: storefront?.variants ?? [],
+      options: storefront?.options
+    };
+  })
+);
 const readToken = import.meta.env.SANITY_API_READ_TOKEN?.trim();
 const hasReadToken = Boolean(readToken);
 const shopifyDomain = import.meta.env.PUBLIC_SHOPIFY_DOMAIN ?? '';
@@ -20,6 +32,20 @@ Astro.response.headers.set(
   'public, s-maxage=60, stale-while-revalidate=300'
 );
 ---
+
+<style is:inline>
+  .page-shop-card-quickbuy {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  @media (hover: none) {
+    .page-shop-card-quickbuy {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+</style>
 
 <BaseLayout title="Shop — Transmoderna">
   <main
@@ -56,8 +82,8 @@ Astro.response.headers.set(
       ) : (
         <>
           <div class="page-shop-grid" data-shop-grid>
-            {products.map((product) => (
-              <ShopProductCard product={product} />
+            {productCards.map(({ product, variants, options }) => (
+              <ShopProductCard product={product} variants={variants} options={options} />
             ))}
           </div>
           <p class="page-shop-empty" data-shop-search-empty hidden>

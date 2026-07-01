@@ -162,7 +162,7 @@
 /* Wrapper caps width so padding-bottom % resolves against 560px, not the column. */
 .page-about-member-aspect {
   width: 100%;
-  max-width: 560px;
+  max-width: min(560px, 30dvw);
   margin-top: 14px;
 }
 

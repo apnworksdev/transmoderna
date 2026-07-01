@@ -27,9 +27,14 @@ const TOUCH_VELOCITY_GAIN = 7;
 const SNAP_TRANSITION_MS = 420;
 const VISIBLE_RADIUS = 3;
 const TOUCH_TAP_THRESHOLD = 8;
-const SCROLLING_OPACITY = 0.1;
 
 function opacityForDistance(distance: number): number {
+  const maxDistance = VISIBLE_RADIUS + 0.5;
+
+  if (distance >= maxDistance) {
+    return 0;
+  }
+
   if (distance < 0.45) {
     return 1;
   }
@@ -42,7 +47,9 @@ function opacityForDistance(distance: number): number {
   if (distance < 3.15) {
     return 0.1;
   }
-  return 0.05;
+
+  const t = (distance - 3.15) / (maxDistance - 3.15);
+  return Math.max(0, 0.1 * (1 - t));
 }
 
 export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCleanup | null {
@@ -233,15 +240,15 @@ export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCl
 
       if (!isVisible) {
         slide.classList.remove('is-active');
-        slide.style.removeProperty('opacity');
+        slide.style.opacity = '0';
         continue;
       }
 
+      slide.style.opacity = String(opacityForDistance(distance));
+
       if (scrolling) {
-        slide.style.opacity = String(SCROLLING_OPACITY);
         slide.classList.remove('is-active');
       } else {
-        slide.style.opacity = String(opacityForDistance(distance));
         slide.classList.toggle('is-active', isCentered);
       }
 
@@ -279,7 +286,8 @@ export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCl
 
     if (previousItemHeight > 0 && previousItemHeight !== itemHeight && scrollY > 0) {
       scrollY = (scrollY / previousItemHeight) * itemHeight;
-    } else {
+      normalizeScroll();
+    } else if (scrollY <= 0) {
       scrollY = (middleCopyStart() + centeredIndex) * itemHeight;
     }
 
@@ -328,7 +336,28 @@ export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCl
 
   const finishSnap = () => {
     scrollY = Math.round(scrollY / itemHeight) * itemHeight;
+    normalizeScroll();
     render(false);
+  };
+
+  const snapScroll = (animate: boolean) => {
+    const previousScrollY = scrollY;
+    normalizeScroll();
+
+    const snapped = Math.round(scrollY / itemHeight) * itemHeight;
+    scrollY = snapped;
+
+    const preNormalizeScrollY = scrollY;
+    normalizeScroll();
+    const loopJumped =
+      itemHeight > 0 && Math.abs(scrollY - preNormalizeScrollY) >= copyHeight() - 1;
+    const shouldAnimate =
+      animate &&
+      !reducedMotion &&
+      !loopJumped &&
+      Math.abs(snapped - previousScrollY) >= 0.5;
+
+    render(shouldAnimate);
   };
 
   const scheduleSnap = () => {
@@ -340,10 +369,7 @@ export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCl
         return;
       }
 
-      const snapped = Math.round(scrollY / itemHeight) * itemHeight;
-      const needsAnimate = !reducedMotion && Math.abs(snapped - scrollY) >= 0.5;
-      scrollY = snapped;
-      render(needsAnimate);
+      snapScroll(true);
     }, SNAP_DELAY_MS);
   };
 

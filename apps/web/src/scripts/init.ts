@@ -9,7 +9,12 @@ import { destroyPodcastsPlayer, initPodcastsPlayer } from './podcasts-player.ts'
 import { destroyPortfolioSwiper, initPortfolioSwiper } from './portfolio-swiper.ts';
 import { initPortfolioVideoPlayer } from './portfolio-video-player.ts';
 import { destroyShopCart, initShopCart } from './shop-cart.ts';
-import { destroyShopProduct, initShopProduct } from './shop-product.ts';
+import {
+  destroyShopCardQuickBuy,
+  destroyShopProduct,
+  initShopCardQuickBuy,
+  initShopProduct
+} from './shop-product.ts';
 import { destroyShopSearch, initShopSearch } from './shop-search.ts';
 import { initWorkAccordion } from './work-accordion.ts';
 
@@ -19,6 +24,7 @@ let cleanupPodcastsPlayer: (() => void) | null = null;
 let cleanupShopCart: (() => void) | null = null;
 let cleanupShopSearch: (() => void) | null = null;
 let cleanupShopProduct: (() => void) | null = null;
+let cleanupShopCardQuickBuy: (() => void) | null = null;
 
 export function initApp(): void {
   initLayout();
@@ -37,6 +43,9 @@ export function initApp(): void {
 
   cleanupShopProduct?.();
   cleanupShopProduct = initShopProduct();
+
+  cleanupShopCardQuickBuy?.();
+  cleanupShopCardQuickBuy = initShopCardQuickBuy();
 
   cleanupPortfolioSwiper?.();
   cleanupPortfolioSwiper = initPortfolioSwiper();
@@ -76,6 +85,10 @@ function destroyShopModules(): void {
   cleanupShopProduct?.();
   cleanupShopProduct = null;
   destroyShopProduct();
+
+  cleanupShopCardQuickBuy?.();
+  cleanupShopCardQuickBuy = null;
+  destroyShopCardQuickBuy();
 }
 
 initPageTransitions();
