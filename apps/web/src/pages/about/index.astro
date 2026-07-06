@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import AboutLinkList from '../../components/AboutLinkList.astro';
+import ContentFadeOverlay from '../../components/ContentFadeOverlay.astro';
 import PortableTextHtml from '../../components/PortableTextHtml.astro';
 import { getAbout, imageAlt, urlForSanityImage } from '../../lib/sanity';
 import '../../styles/pages/about.css';
@@ -151,6 +152,8 @@ const copyrightYear = new Date().getFullYear();
         </div>
       )
     }
+
+    <ContentFadeOverlay color="var(--gray-color)" zIndex={1} />
 
     <footer class="page-about-footer">
       <time class="page-about-clock site-header-pill" datetime="" data-about-clock>

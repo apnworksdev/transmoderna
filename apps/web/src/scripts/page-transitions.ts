@@ -95,9 +95,14 @@ export function initPageTransitions(): void {
     }
 
     transitionEvent.loader = async () => {
-      const freshDocument = await fetchFreshDocument(transitionEvent.to);
-      hydratePortfolioIndexCarousel(freshDocument);
-      transitionEvent.newDocument = freshDocument;
+      try {
+        const freshDocument = await fetchFreshDocument(transitionEvent.to);
+        hydratePortfolioIndexCarousel(freshDocument);
+        transitionEvent.newDocument = freshDocument;
+      } catch (error) {
+        console.error('[page-transitions] Portfolio return loader failed:', error);
+        window.location.assign(transitionEvent.to.href);
+      }
     };
   });
 

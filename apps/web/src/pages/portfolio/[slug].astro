@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import PortfolioVideoPlayer from '../../components/PortfolioVideoPlayer.astro';
+import PortfolioMedia from '../../components/PortfolioMedia.astro';
 import { getPortfolioItemBySlug } from '../../lib/sanity';
 import '../../styles/pages/portfolio.css';
 
@@ -18,6 +18,7 @@ if (!item) {
 }
 
 const pageTitle = item.title ? `${item.title} — Transmoderna` : 'Portfolio — Transmoderna';
+const mediaItems = item.media ?? [];
 ---
 
 <BaseLayout title={pageTitle} hideSiteHeader>
@@ -30,6 +31,17 @@ const pageTitle = item.title ? `${item.title} — Transmoderna` : 'Portfolio —
       <a class="page-portfolio-detail-close site-header-pill" href="/portfolio">Close</a>
     </div>
 
-    <PortfolioVideoPlayer src={item.videoSrc} title={item.title ?? 'Portfolio video'} />
+    {
+      mediaItems.length > 0 ? (
+        <div class="page-portfolio-detail-media">
+          {mediaItems.map((media, index) => (
+            <PortfolioMedia
+              media={media}
+              title={mediaItems.length > 1 ? `${item.title ?? 'Portfolio'} — ${index + 1}` : (item.title ?? 'Portfolio')}
+            />
+          ))}
+        </div>
+      ) : null
+    }
   </main>
 </BaseLayout>

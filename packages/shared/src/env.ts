@@ -6,7 +6,8 @@ export const serverEnvSchema = z.object({
   SANITY_API_WRITE_TOKEN: z.string().min(1).optional(),
   SANITY_API_READ_TOKEN: z.string().optional(),
   SANITY_STUDIO_SHOPIFY_DOMAIN: z.string().optional(),
-  SANITY_STUDIO_SHOPIFY_ADMIN_ACCESS_TOKEN: z.string().optional()
+  SANITY_STUDIO_SHOPIFY_ADMIN_ACCESS_TOKEN: z.string().optional(),
+  SHOPIFY_SYNC_SECRET: z.string().optional()
 });
 
 export const publicEnvSchema = z.object({

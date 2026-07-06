@@ -4,22 +4,24 @@ import ShopBackground from '../../components/shop/ShopBackground.astro';
 import ShopBottomBar from '../../components/shop/ShopBottomBar.astro';
 import ShopProductCard from '../../components/shop/ShopProductCard.astro';
 import { getShopPage, productHandle } from '../../lib/shop';
-import { fetchProductStorefrontDataByHandle } from '../../lib/shopify-storefront';
+import { fetchProductsStorefrontDataByHandles } from '../../lib/shopify-storefront';
 import '../../styles/pages/shop.css';
 
 const shop = await getShopPage();
 const products = shop?.products ?? [];
-const productCards = await Promise.all(
-  products.map(async (product) => {
-    const handle = productHandle(product);
-    const storefront = handle ? await fetchProductStorefrontDataByHandle(handle) : null;
-    return {
-      product,
-      variants: storefront?.variants ?? [],
-      options: storefront?.options
-    };
-  })
-);
+const handles = products
+  .map((product) => productHandle(product))
+  .filter((handle): handle is string => Boolean(handle));
+const storefrontByHandle = await fetchProductsStorefrontDataByHandles(handles);
+const productCards = products.map((product) => {
+  const handle = productHandle(product);
+  const storefront = handle ? (storefrontByHandle.get(handle) ?? null) : null;
+  return {
+    product,
+    variants: storefront?.variants ?? [],
+    options: storefront?.options
+  };
+});
 const readToken = import.meta.env.SANITY_API_READ_TOKEN?.trim();
 const hasReadToken = Boolean(readToken);
 const shopifyDomain = import.meta.env.PUBLIC_SHOPIFY_DOMAIN ?? '';
@@ -34,15 +36,13 @@ Astro.response.headers.set(
 ---
 
 <style is:inline>
-  .page-shop-card-quickbuy {
-    opacity: 0;
-    pointer-events: none;
-  }
+  @media (max-width: 820px) {
+    .page-shop-card-quickbuy-trigger {
+      display: flex;
+    }
 
-  @media (hover: none) {
-    .page-shop-card-quickbuy {
-      opacity: 1;
-      pointer-events: auto;
+    .page-shop-card-quickbuy-panel {
+      display: none;
     }
   }
 </style>

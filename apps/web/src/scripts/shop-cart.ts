@@ -527,6 +527,13 @@ export function initShopCart(): (() => void) | null {
         updateCheckoutLinks(updated?.checkoutUrl);
         if (statusEl) statusEl.textContent = 'Added to cart';
         btn.textContent = 'Added';
+
+        const card = buyRoot.closest<HTMLElement>('[data-shop-product-card]');
+        if (card?.classList.contains('is-quickshop-open')) {
+          card.classList.remove('is-quickshop-open');
+          const trigger = buyRoot.querySelector<HTMLButtonElement>('[data-quickshop-trigger]');
+          if (trigger) trigger.setAttribute('aria-expanded', 'false');
+        }
       } catch (err) {
         console.error('[shop-cart]', err);
         btn.textContent = 'Error';

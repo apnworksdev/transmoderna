@@ -31,7 +31,6 @@ const images =
     : fallbackImage
       ? [{ url: fallbackImage, altText: title }]
       : [];
-const heroImage = images[0];
 const imagesJson = JSON.stringify(images);
 const shopifyDomain = import.meta.env.PUBLIC_SHOPIFY_DOMAIN ?? '';
 const storefrontToken = import.meta.env.PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN ?? '';
@@ -60,6 +59,38 @@ Astro.response.headers.set(
     <ShopProductToolbar title={title} />
 
     <div class="page-shop-product-layout">
+      <div class="page-shop-product-media" data-product-media>
+        {
+          images.length > 0 ? (
+            <div
+              class="page-shop-product-media-track"
+              data-product-media-track
+              tabindex={images.length > 1 ? 0 : undefined}
+              role="region"
+              aria-roledescription="carousel"
+              aria-label="Product images"
+            >
+              {images.map((image, index) => (
+                <figure
+                  class:list={['page-shop-product-media-slide', { 'is-active': index === 0 }]}
+                  data-product-media-slide
+                  data-image-index={index}
+                  aria-hidden={index !== 0 ? 'true' : 'false'}
+                >
+                  <img
+                    src={image.url}
+                    alt={image.altText ?? title}
+                    data-product-slide
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    decoding="async"
+                  />
+                </figure>
+              ))}
+            </div>
+          ) : null
+        }
+      </div>
+
       <div class="page-shop-product-panel">
         <ProductBuy product={product} variants={variants} options={storefront?.options} />
       </div>
@@ -70,6 +101,7 @@ Astro.response.headers.set(
             type="button"
             class="page-shop-product-thumb"
             data-product-thumb
+            data-image-index={index}
             data-image-url={image.url}
             aria-current={index === 0 ? 'true' : 'false'}
             aria-label={`View image ${index + 1}`}
@@ -78,19 +110,6 @@ Astro.response.headers.set(
           </button>
         ))}
       </aside>
-
-      <div class="page-shop-product-media">
-        {
-          heroImage ? (
-            <img
-              src={heroImage.url}
-              alt={heroImage.altText ?? title}
-              data-product-hero
-              loading="eager"
-            />
-          ) : null
-        }
-      </div>
     </div>
 
     <ShopBottomBar />

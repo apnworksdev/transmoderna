@@ -1,0 +1,30 @@
+---
+import type { WorkMedia } from '../lib/sanity';
+import PortfolioVideoPlayer from './PortfolioVideoPlayer.astro';
+import SanityImage from './SanityImage.astro';
+
+interface Props {
+  media?: WorkMedia;
+  title: string;
+}
+
+const { media, title } = Astro.props;
+const vimeoUrl = media?.url?.trim();
+const videoSrc = media?.videoSrc;
+const showVideo = Boolean(vimeoUrl && videoSrc);
+const showImage = Boolean(media?.image && (!vimeoUrl || !videoSrc));
+---
+
+{
+  showVideo || showImage ? (
+    <section class="page-portfolio-detail-media-item">
+      {showVideo ? (
+        <PortfolioVideoPlayer src={videoSrc} title={title} />
+      ) : (
+        <figure class="page-portfolio-detail-image">
+          <SanityImage image={media?.image} altFallback={title} width={2400} loading="lazy" />
+        </figure>
+      )}
+    </section>
+  ) : null
+}

@@ -1,7 +1,7 @@
 /**
- * Migrate legacy portfolio items to the new schema.
- * Copies thumbnailImage + videoUrl from the first complete item, generates slugs,
- * fills subtitle/year, and removes the old `media` field.
+ * Migrate portfolio items to the media array schema.
+ * Converts legacy `videoUrl` into multiple workMedia entries, fills missing fields,
+ * and removes deprecated top-level fields.
  *
  * Run from apps/studio:
  *   npx sanity exec scripts/migrate-portfolio-items.mjs --with-user-token
@@ -12,6 +12,7 @@ const client = getCliClient({ apiVersion: '2025-08-15' });
 
 const SUBTITLES = ['AV SHOW', 'LIVE SET', 'INSTALLATION', 'STAGE DESIGN', 'VISUALS', 'PROJECTION'];
 const YEARS = [2019, 2020, 2021, 2022, 2023, 2024, 2025];
+const MEDIA_COUNT = 4;
 
 function slugify(title) {
   return title
@@ -25,16 +26,33 @@ function pickRandom(list, index) {
   return list[index % list.length];
 }
 
+function buildMediaArray(videoUrl) {
+  return Array.from({ length: MEDIA_COUNT }, (_, index) => ({
+    _type: 'workMedia',
+    _key: `media-${index + 1}`,
+    url: videoUrl
+  }));
+}
+
+function hasValidMedia(media) {
+  return Array.isArray(media) && media.some((entry) => entry?.url?.trim() || entry?.image?.asset);
+}
+
 const template = await client.fetch(
-  `*[_type == "portfolioItem" && defined(thumbnailImage.asset) && defined(videoUrl)][0]{
+  `*[_type == "portfolioItem" && defined(thumbnailImage.asset) && (defined(videoUrl) || count(media[defined(url) || defined(image.asset)]) > 0)][0]{
     _id,
     title,
     thumbnailImage,
-    videoUrl
+    videoUrl,
+    media
   }`
 );
 
-if (!template?.thumbnailImage || !template.videoUrl) {
+const templateVideoUrl =
+  template?.videoUrl?.trim() ||
+  template?.media?.find((entry) => entry?.url?.trim())?.url?.trim();
+
+if (!template?.thumbnailImage || !templateVideoUrl) {
   console.error('No complete portfolio item found to use as template.');
   process.exit(1);
 }
@@ -64,11 +82,12 @@ let skipped = 0;
 
 for (const [index, item] of items.entries()) {
   const isTemplate = item._id === template._id;
+  const legacyVideoUrl = item.videoUrl?.trim() || templateVideoUrl;
   const needsMigration =
-    item.media != null ||
+    !hasValidMedia(item.media) ||
+    item.videoUrl != null ||
     !item.slug?.current ||
     !item.thumbnailImage?.asset ||
-    !item.videoUrl ||
     item.subtitle == null ||
     item.year == null;
 
@@ -96,12 +115,12 @@ for (const [index, item] of items.entries()) {
     sortOrder: item.sortOrder ?? index
   });
 
-  if (!isTemplate || !item.thumbnailImage?.asset) {
-    patch.set({ thumbnailImage: template.thumbnailImage });
+  if (!hasValidMedia(item.media)) {
+    patch.set({ media: buildMediaArray(legacyVideoUrl) });
   }
 
-  if (!isTemplate || !item.videoUrl) {
-    patch.set({ videoUrl: template.videoUrl });
+  if (!isTemplate || !item.thumbnailImage?.asset) {
+    patch.set({ thumbnailImage: template.thumbnailImage });
   }
 
   if (item.subtitle == null) {
@@ -112,12 +131,12 @@ for (const [index, item] of items.entries()) {
     patch.set({ year: pickRandom(YEARS, index + 2) });
   }
 
-  if (item.media != null) {
-    patch.unset(['media']);
+  if (item.videoUrl != null) {
+    patch.unset(['videoUrl']);
   }
 
   await patch.commit();
-  console.log(`updated ${item.title} → /${slug}`);
+  console.log(`updated ${item.title} → /${slug} (${MEDIA_COUNT} media items)`);
   updated += 1;
 }
 

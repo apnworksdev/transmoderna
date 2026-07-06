@@ -6,6 +6,9 @@ const apiVersion = '2024-01';
 const VARIANTS_FIRST = 250;
 const IMAGES_FIRST = 12;
 const CART_LINES_FIRST = 250;
+const STOREFRONT_CACHE_TTL_MS = 60_000;
+const STOREFRONT_BATCH_SIZE = 10;
+const HANDLE_PATTERN = /^[a-zA-Z0-9_-]+$/;
 
 export type StorefrontVariant = {
   id: string;
@@ -29,6 +32,13 @@ export type StorefrontProductData = {
   variantsTruncated: boolean;
 };
 
+type StorefrontCacheEntry = {
+  expiresAt: number;
+  value: StorefrontProductData | null;
+};
+
+const storefrontCache = new Map<string, StorefrontCacheEntry>();
+
 export function isStorefrontConfigured(): boolean {
   return Boolean(
     typeof domain === 'string' &&
@@ -44,6 +54,32 @@ function getMarketCountry(): string | null {
 
 function inContextDirective(country: string | null): string {
   return country ? '@inContext(country: $country)' : '';
+}
+
+function sanitizeHandle(handle: string): string | null {
+  const trimmed = handle.trim();
+  return HANDLE_PATTERN.test(trimmed) ? trimmed : null;
+}
+
+function readCachedProduct(handle: string): StorefrontProductData | null | undefined {
+  const entry = storefrontCache.get(handle);
+  if (!entry) {
+    return undefined;
+  }
+
+  if (entry.expiresAt <= Date.now()) {
+    storefrontCache.delete(handle);
+    return undefined;
+  }
+
+  return entry.value;
+}
+
+function writeCachedProduct(handle: string, value: StorefrontProductData | null): void {
+  storefrontCache.set(handle, {
+    expiresAt: Date.now() + STOREFRONT_CACHE_TTL_MS,
+    value
+  });
 }
 
 async function storefrontFetch<T>(
@@ -85,80 +121,63 @@ async function storefrontFetch<T>(
   return json.data;
 }
 
+const PRODUCT_FIELDS = `
+  images(first: ${IMAGES_FIRST}) {
+    edges { node { url altText } }
+  }
+  options { name values }
+  variants(first: ${VARIANTS_FIRST}) {
+    edges {
+      node {
+        id
+        title
+        availableForSale
+        quantityAvailable
+        price { amount currencyCode }
+        selectedOptions { name value }
+        image { url altText }
+      }
+    }
+  }
+`;
+
 const PRODUCT_BY_HANDLE_QUERY = (country: string | null) =>
   country
     ? `query ProductByHandle($handle: String!, $country: CountryCode!) ${inContextDirective(country)} {
         product(handle: $handle) {
-          images(first: ${IMAGES_FIRST}) {
-            edges { node { url altText } }
-          }
-          options { name values }
-          variants(first: ${VARIANTS_FIRST}) {
-            edges {
-              node {
-                id
-                title
-                availableForSale
-                quantityAvailable
-                price { amount currencyCode }
-                selectedOptions { name value }
-                image { url altText }
-              }
-            }
-          }
+          ${PRODUCT_FIELDS}
         }
       }`
     : `query ProductByHandle($handle: String!) {
         product(handle: $handle) {
-          images(first: ${IMAGES_FIRST}) {
-            edges { node { url altText } }
-          }
-          options { name values }
-          variants(first: ${VARIANTS_FIRST}) {
-            edges {
-              node {
-                id
-                title
-                availableForSale
-                quantityAvailable
-                price { amount currencyCode }
-                selectedOptions { name value }
-                image { url altText }
-              }
-            }
-          }
+          ${PRODUCT_FIELDS}
         }
       }`;
 
-export async function fetchProductStorefrontDataByHandle(
-  handle: string
-): Promise<StorefrontProductData | null> {
-  const country = getMarketCountry();
-  const data = await storefrontFetch<{
-    product?: {
-      images?: { edges?: Array<{ node?: { url?: string; altText?: string | null } }> };
-      options?: Array<{ name?: string; values?: string[] }>;
-      variants?: { edges?: Array<{ node?: StorefrontVariant }> };
-    } | null;
-  }>(PRODUCT_BY_HANDLE_QUERY(country), country ? { handle, country } : { handle });
+type RawStorefrontProduct = {
+  images?: { edges?: Array<{ node?: { url?: string; altText?: string | null } }> };
+  options?: Array<{ name?: string; values?: string[] }>;
+  variants?: { edges?: Array<{ node?: StorefrontVariant }> };
+};
 
-  if (!data.product) {
+function parseStorefrontProduct(product: RawStorefrontProduct | null | undefined): StorefrontProductData | null {
+  if (!product) {
     return null;
   }
 
-  const images = (data.product.images?.edges ?? [])
+  const images = (product.images?.edges ?? [])
     .map((edge) => edge.node)
     .filter((node): node is { url: string; altText?: string | null } => Boolean(node?.url))
     .map((node) => ({ url: node.url, altText: node.altText }));
 
-  const options = (data.product.options ?? [])
+  const options = (product.options ?? [])
     .filter((option): option is { name: string; values: string[] } => Boolean(option?.name))
     .map((option) => ({
       name: option.name,
       values: option.values ?? []
     }));
 
-  const variantEdges = data.product.variants?.edges ?? [];
+  const variantEdges = product.variants?.edges ?? [];
   const variants = variantEdges
     .map((edge) => edge.node)
     .filter((node): node is StorefrontVariant => Boolean(node?.id));
@@ -169,6 +188,122 @@ export async function fetchProductStorefrontDataByHandle(
     variants,
     variantsTruncated: variantEdges.length >= VARIANTS_FIRST
   };
+}
+
+function buildProductsBatchQuery(handles: string[], country: string | null): string {
+  const productSelections = handles
+    .map((_, index) => `p${index}: product(handle: $handle${index}) { ${PRODUCT_FIELDS} }`)
+    .join('\n');
+
+  const variableDefs = handles.map((_, index) => `$handle${index}: String!`).join(', ');
+  const context = country ? `($country: CountryCode!, ${variableDefs}) ${inContextDirective(country)}` : `(${variableDefs})`;
+
+  return `query ProductsBatch${context} {\n${productSelections}\n}`;
+}
+
+async function fetchProductsBatch(handles: string[]): Promise<Map<string, StorefrontProductData | null>> {
+  const country = getMarketCountry();
+  const query = buildProductsBatchQuery(handles, country);
+  const variables: Record<string, unknown> = {};
+
+  handles.forEach((handle, index) => {
+    variables[`handle${index}`] = handle;
+  });
+
+  if (country) {
+    variables.country = country;
+  }
+
+  const data = await storefrontFetch<Record<string, RawStorefrontProduct | null>>(query, variables);
+  const results = new Map<string, StorefrontProductData | null>();
+
+  handles.forEach((handle, index) => {
+    const parsed = parseStorefrontProduct(data[`p${index}`]);
+    results.set(handle, parsed);
+    writeCachedProduct(handle, parsed);
+  });
+
+  return results;
+}
+
+export async function fetchProductsStorefrontDataByHandles(
+  handles: string[]
+): Promise<Map<string, StorefrontProductData | null>> {
+  const uniqueHandles = [...new Set(handles.map(sanitizeHandle).filter((handle): handle is string => Boolean(handle)))];
+
+  if (uniqueHandles.length === 0) {
+    return new Map();
+  }
+
+  if (!isStorefrontConfigured()) {
+    return new Map(uniqueHandles.map((handle) => [handle, null]));
+  }
+
+  const results = new Map<string, StorefrontProductData | null>();
+  const handlesToFetch: string[] = [];
+
+  for (const handle of uniqueHandles) {
+    const cached = readCachedProduct(handle);
+    if (cached !== undefined) {
+      results.set(handle, cached);
+    } else {
+      handlesToFetch.push(handle);
+    }
+  }
+
+  if (handlesToFetch.length === 0) {
+    return results;
+  }
+
+  try {
+    for (let index = 0; index < handlesToFetch.length; index += STOREFRONT_BATCH_SIZE) {
+      const batch = handlesToFetch.slice(index, index + STOREFRONT_BATCH_SIZE);
+      const batchResults = await fetchProductsBatch(batch);
+      batchResults.forEach((value, handle) => results.set(handle, value));
+    }
+  } catch (error) {
+    console.error('[shopify-storefront] batch fetch failed:', error);
+    for (const handle of handlesToFetch) {
+      if (!results.has(handle)) {
+        results.set(handle, null);
+      }
+    }
+  }
+
+  return results;
+}
+
+export async function fetchProductStorefrontDataByHandle(
+  handle: string
+): Promise<StorefrontProductData | null> {
+  const safeHandle = sanitizeHandle(handle);
+  if (!safeHandle) {
+    return null;
+  }
+
+  const cached = readCachedProduct(safeHandle);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  if (!isStorefrontConfigured()) {
+    return null;
+  }
+
+  try {
+    const country = getMarketCountry();
+    const data = await storefrontFetch<{ product?: RawStorefrontProduct | null }>(
+      PRODUCT_BY_HANDLE_QUERY(country),
+      country ? { handle: safeHandle, country } : { handle: safeHandle }
+    );
+
+    const parsed = parseStorefrontProduct(data.product);
+    writeCachedProduct(safeHandle, parsed);
+    return parsed;
+  } catch (error) {
+    console.error('[shopify-storefront] fetch failed:', error);
+    return null;
+  }
 }
 
 /** @deprecated Use fetchProductStorefrontDataByHandle */

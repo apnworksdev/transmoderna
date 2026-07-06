@@ -13,6 +13,11 @@ export default defineConfig({
         context: 'server',
         access: 'secret',
         optional: true
+      }),
+      SHOPIFY_SYNC_SECRET: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: true
       })
     }
   },

@@ -7,8 +7,18 @@ function formatTime(seconds: number): string {
 }
 
 function setPlayToggleLabel(button: HTMLButtonElement, isPlaying: boolean): void {
-  button.textContent = isPlaying ? 'STOP' : 'PLAY';
-  button.setAttribute('aria-label', isPlaying ? 'Stop podcast' : 'Play podcast');
+  const label = button.querySelector<HTMLElement>('[data-podcast-play-label]');
+  const isDetail = Boolean(button.closest('.podcast-player-bar--detail'));
+
+  if (label) {
+    label.textContent = isPlaying ? (isDetail ? 'PAUSE' : 'STOP') : 'PLAY';
+  }
+
+  button.classList.toggle('is-playing', isPlaying);
+  button.setAttribute(
+    'aria-label',
+    isPlaying ? (isDetail ? 'Pause podcast' : 'Stop podcast') : 'Play podcast'
+  );
 }
 
 function setMuteToggleLabel(button: HTMLButtonElement, isMuted: boolean): void {

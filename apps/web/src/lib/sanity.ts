@@ -139,8 +139,7 @@ export type PortfolioItemDocument = {
   subtitle?: string;
   year?: number;
   thumbnailImage?: SanityImageWithAlt;
-  videoUrl?: string;
-  videoSrc?: string;
+  media?: WorkMedia[];
   sortOrder?: number;
 };
 
@@ -247,16 +246,38 @@ const client = projectId
 
 export const sanityClient = client;
 
+async function sanityFetch<T>(
+  query: string,
+  params: Record<string, unknown>,
+  fallback: T,
+  options?: { rethrow?: boolean }
+): Promise<T> {
+  if (!client) {
+    return fallback;
+  }
+
+  try {
+    return await client.fetch<T>(query, params);
+  } catch (error) {
+    console.error('[sanity] fetch failed:', error);
+    if (options?.rethrow) {
+      throw error;
+    }
+    return fallback;
+  }
+}
+
 export async function getHome(): Promise<HomeDocument | null> {
   if (!client) {
     return null;
   }
-  return client.fetch<HomeDocument | null>(
+  return sanityFetch<HomeDocument | null>(
     `*[_type == "home" && _id == $id][0]{
       introText,
       logo { ..., alt, asset->{ url, mimeType } }
     }`,
-    { id: HOME_DOCUMENT_ID }
+    { id: HOME_DOCUMENT_ID },
+    null
   );
 }
 
@@ -270,7 +291,7 @@ export async function getSiteHeader(): Promise<SiteHeaderDocument | null> {
   if (!client) {
     return null;
   }
-  return client.fetch<SiteHeaderDocument | null>(
+  return sanityFetch<SiteHeaderDocument | null>(
     `*[_type == "siteHeader" && _id == $id][0]{
       logo ${siteHeaderImageProjection},
       menuLinks[]{
@@ -279,7 +300,8 @@ export async function getSiteHeader(): Promise<SiteHeaderDocument | null> {
         image ${siteHeaderImageProjection}
       }
     }`,
-    { id: SITE_HEADER_DOCUMENT_ID }
+    { id: SITE_HEADER_DOCUMENT_ID },
+    null
   );
 }
 
@@ -314,7 +336,7 @@ async function enrichWorks(works: WorkDocument[]): Promise<WorkDocument[]> {
           if (!url) {
             return entry;
           }
-          const videoSrc = await resolveVimeoVideoSrc(url);
+          const videoSrc = await resolveVimeoVideoSrc(url).catch(() => undefined);
           return videoSrc ? { ...entry, videoSrc } : entry;
         })
       );
@@ -328,8 +350,10 @@ export async function getWorks(): Promise<WorkDocument[]> {
   if (!client) {
     return [];
   }
-  const works = await client.fetch<WorkDocument[]>(
-    `*[_type == "work"] | order(sortOrder asc, year desc) ${workDocumentProjection}`
+  const works = await sanityFetch<WorkDocument[]>(
+    `*[_type == "work"] | order(sortOrder asc, year desc) ${workDocumentProjection}`,
+    {},
+    []
   );
 
   return enrichWorks(works);
@@ -340,13 +364,14 @@ export async function getWorkPage(): Promise<WorkPageDocument | null> {
     return null;
   }
 
-  const page = await client.fetch<WorkPageDocument | null>(
+  const page = await sanityFetch<WorkPageDocument | null>(
     `*[_type == "workPage" && _id == $id][0]{
       backgroundImage { ..., alt, asset->{ url, mimeType } },
       clients[]{ name },
       "works": workItems[]->${workDocumentProjection}
     }`,
-    { id: WORK_PAGE_DOCUMENT_ID }
+    { id: WORK_PAGE_DOCUMENT_ID },
+    null
   );
 
   if (!page) {
@@ -404,7 +429,7 @@ async function enrichExhibitionMedia(media: ExhibitionMedia | undefined): Promis
   }
 
   const { resolveVimeoVideoSrc } = await import('./vimeo');
-  const videoSrc = await resolveVimeoVideoSrc(media.videoUrl);
+  const videoSrc = await resolveVimeoVideoSrc(media.videoUrl).catch(() => undefined);
   return videoSrc ? { ...media, videoSrc } : media;
 }
 
@@ -463,14 +488,15 @@ export async function getExhibitionsPage(): Promise<ExhibitionsPageDocument | nu
     return null;
   }
 
-  const page = await client.fetch<ExhibitionsPageDocument | null>(
+  const page = await sanityFetch<ExhibitionsPageDocument | null>(
     `*[_type == "exhibitionsPage" && _id == $id][0]{
       thumbnailBackgroundImage { ..., alt, asset->{ url, mimeType } },
       fullBackgroundImage { ..., alt, asset->{ url, mimeType } },
       singleBackgroundImage { ..., alt, asset->{ url, mimeType } },
       "exhibitions": exhibitions[]->${exhibitionListProjection}
     }`,
-    { id: EXHIBITIONS_PAGE_DOCUMENT_ID }
+    { id: EXHIBITIONS_PAGE_DOCUMENT_ID },
+    null
   );
 
   if (!page) {
@@ -482,8 +508,10 @@ export async function getExhibitionsPage(): Promise<ExhibitionsPageDocument | nu
   );
 
   if (exhibitions.length === 0) {
-    exhibitions = await client.fetch<ExhibitionDocument[]>(
-      `*[_type == "exhibition"] | order(title asc) ${exhibitionListProjection}`
+    exhibitions = await sanityFetch<ExhibitionDocument[]>(
+      `*[_type == "exhibition"] | order(title asc) ${exhibitionListProjection}`,
+      {},
+      []
     );
   }
 
@@ -500,13 +528,14 @@ export async function getExhibitionsSingleBackgroundImage(): Promise<SanityImage
     return null;
   }
 
-  return client.fetch<SanityImageWithAlt | null>(
+  return sanityFetch<SanityImageWithAlt | null>(
     `*[_type == "exhibitionsPage" && _id == $id][0].singleBackgroundImage {
       ...,
       alt,
       asset->{ url, mimeType }
     }`,
-    { id: EXHIBITIONS_PAGE_DOCUMENT_ID }
+    { id: EXHIBITIONS_PAGE_DOCUMENT_ID },
+    null
   );
 }
 
@@ -515,7 +544,7 @@ export async function getExhibitionBySlug(slug: string): Promise<ExhibitionDocum
     return null;
   }
 
-  const exhibition = await client.fetch<ExhibitionDocument | null>(
+  const exhibition = await sanityFetch<ExhibitionDocument | null>(
     `*[_type == "exhibition" && slug.current == $slug][0]{
       _id,
       title,
@@ -527,7 +556,9 @@ export async function getExhibitionBySlug(slug: string): Promise<ExhibitionDocum
       "artists": artists[]->{ _id, name, country },
       ${exhibitionContentProjection}
     }`,
-    { slug }
+    { slug },
+    null,
+    { rethrow: true }
   );
 
   if (!exhibition) {
@@ -537,6 +568,16 @@ export async function getExhibitionBySlug(slug: string): Promise<ExhibitionDocum
   return enrichExhibition(exhibition);
 }
 
+const portfolioItemListProjection = `{
+  _id,
+  title,
+  slug,
+  subtitle,
+  year,
+  thumbnailImage { ..., alt, asset->{ url, mimeType } },
+  sortOrder
+}`;
+
 const portfolioItemProjection = `{
   _id,
   title,
@@ -544,7 +585,11 @@ const portfolioItemProjection = `{
   subtitle,
   year,
   thumbnailImage { ..., alt, asset->{ url, mimeType } },
-  videoUrl,
+  media[]{
+    url,
+    footnote,
+    image { ..., alt, asset->{ url, mimeType } }
+  },
   sortOrder
 }`;
 
@@ -555,13 +600,23 @@ async function enrichPortfolioItems(
 
   return Promise.all(
     items.map(async (item) => {
-      const videoUrl = item.videoUrl?.trim();
-      if (!videoUrl) {
+      if (!item.media?.length) {
         return item;
       }
 
-      const videoSrc = await resolveVimeoVideoSrc(videoUrl);
-      return videoSrc ? { ...item, videoSrc } : item;
+      const media = await Promise.all(
+        item.media.map(async (entry) => {
+          const url = entry.url?.trim();
+          if (!url) {
+            return entry;
+          }
+
+          const videoSrc = await resolveVimeoVideoSrc(url).catch(() => undefined);
+          return videoSrc ? { ...entry, videoSrc } : entry;
+        })
+      );
+
+      return { ...item, media };
     })
   );
 }
@@ -571,12 +626,13 @@ export async function getPortfolioPage(): Promise<PortfolioPageDocument | null> 
     return null;
   }
 
-  const page = await client.fetch<PortfolioPageDocument | null>(
+  const page = await sanityFetch<PortfolioPageDocument | null>(
     `*[_type == "portfolioPage" && _id == $id][0]{
       backgroundImage { ..., alt, asset->{ url, mimeType } },
-      "portfolioItems": portfolioItems[]->${portfolioItemProjection}
+      "portfolioItems": portfolioItems[]->${portfolioItemListProjection}
     }`,
-    { id: PORTFOLIO_PAGE_DOCUMENT_ID }
+    { id: PORTFOLIO_PAGE_DOCUMENT_ID },
+    null
   );
 
   if (!page) {
@@ -588,14 +644,16 @@ export async function getPortfolioPage(): Promise<PortfolioPageDocument | null> 
   );
 
   if (portfolioItems.length === 0) {
-    portfolioItems = await client.fetch<PortfolioItemDocument[]>(
-      `*[_type == "portfolioItem"] | order(sortOrder asc) ${portfolioItemProjection}`
+    portfolioItems = await sanityFetch<PortfolioItemDocument[]>(
+      `*[_type == "portfolioItem"] | order(sortOrder asc) ${portfolioItemListProjection}`,
+      {},
+      []
     );
   }
 
   return {
     backgroundImage: page.backgroundImage,
-    portfolioItems: await enrichPortfolioItems(portfolioItems)
+    portfolioItems
   };
 }
 
@@ -604,9 +662,11 @@ export async function getPortfolioItemBySlug(slug: string): Promise<PortfolioIte
     return null;
   }
 
-  const item = await client.fetch<PortfolioItemDocument | null>(
+  const item = await sanityFetch<PortfolioItemDocument | null>(
     `*[_type == "portfolioItem" && slug.current == $slug][0] ${portfolioItemProjection}`,
-    { slug }
+    { slug },
+    null,
+    { rethrow: true }
   );
 
   if (!item) {
@@ -680,12 +740,13 @@ export async function getPodcastsPage(): Promise<PodcastPageDocument | null> {
     return null;
   }
 
-  const page = await client.fetch<PodcastPageDocument | null>(
+  const page = await sanityFetch<PodcastPageDocument | null>(
     `*[_type == "podcastPage" && _id == $id][0]{
       backgroundImage { ..., alt, asset->{ url, mimeType } },
       "podcasts": podcasts[]->${podcastDocumentProjection}
     }`,
-    { id: PODCAST_PAGE_DOCUMENT_ID }
+    { id: PODCAST_PAGE_DOCUMENT_ID },
+    null
   );
 
   if (!page) {
@@ -697,8 +758,10 @@ export async function getPodcastsPage(): Promise<PodcastPageDocument | null> {
   );
 
   if (podcasts.length === 0) {
-    podcasts = await client.fetch<PodcastDocument[]>(
-      `*[_type == "podcast"] | order(sortOrder asc, number desc) ${podcastDocumentProjection}`
+    podcasts = await sanityFetch<PodcastDocument[]>(
+      `*[_type == "podcast"] | order(sortOrder asc, number desc) ${podcastDocumentProjection}`,
+      {},
+      []
     );
   }
 
@@ -713,9 +776,11 @@ export async function getPodcastBySlug(slug: string): Promise<PodcastDocument | 
     return null;
   }
 
-  return client.fetch<PodcastDocument | null>(
+  return sanityFetch<PodcastDocument | null>(
     `*[_type == "podcast" && slug.current == $slug][0] ${podcastDocumentProjection}`,
-    { slug }
+    { slug },
+    null,
+    { rethrow: true }
   );
 }
 
@@ -723,7 +788,7 @@ export async function getAbout(): Promise<AboutDocument | null> {
   if (!client) {
     return null;
   }
-  return client.fetch<AboutDocument | null>(
+  return sanityFetch<AboutDocument | null>(
     `*[_type == "about" && _id == $id][0]{
       description,
       teamMembers[]{
@@ -734,6 +799,7 @@ export async function getAbout(): Promise<AboutDocument | null> {
       contact,
       connect
     }`,
-    { id: ABOUT_DOCUMENT_ID }
+    { id: ABOUT_DOCUMENT_ID },
+    null
   );
 }

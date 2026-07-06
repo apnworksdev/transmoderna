@@ -1,12 +1,15 @@
 type PlayerCleanup = () => void;
 
-export function initPortfolioVideoPlayer(root: ParentNode = document): PlayerCleanup | null {
-  const playerRoot = root.querySelector<HTMLElement>('[data-portfolio-video]');
-  const video = playerRoot?.querySelector<HTMLVideoElement>('[data-portfolio-video-media]');
-  const progress = playerRoot?.querySelector<HTMLButtonElement>('[data-portfolio-video-progress]');
-  const progressFill = playerRoot?.querySelector<HTMLElement>('[data-portfolio-video-progress-fill]');
+function initSinglePortfolioVideoPlayer(
+  playerRoot: HTMLElement,
+  options: { autoplay?: boolean } = {}
+): PlayerCleanup | null {
+  const { autoplay = false } = options;
+  const video = playerRoot.querySelector<HTMLVideoElement>('[data-portfolio-video-media]');
+  const progress = playerRoot.querySelector<HTMLButtonElement>('[data-portfolio-video-progress]');
+  const progressFill = playerRoot.querySelector<HTMLElement>('[data-portfolio-video-progress-fill]');
 
-  if (!playerRoot || !video || !progress || !progressFill) {
+  if (!video || !progress || !progressFill) {
     return null;
   }
 
@@ -122,7 +125,9 @@ export function initPortfolioVideoPlayer(root: ParentNode = document): PlayerCle
   progress.addEventListener('pointerup', onProgressPointerUp);
   progress.addEventListener('pointercancel', onProgressPointerUp);
 
-  void tryAutoplay();
+  if (autoplay) {
+    void tryAutoplay();
+  }
   updateProgress();
 
   return () => {
@@ -137,7 +142,28 @@ export function initPortfolioVideoPlayer(root: ParentNode = document): PlayerCle
   };
 }
 
+export function initPortfolioVideoPlayer(root: ParentNode = document): PlayerCleanup | null {
+  const playerRoots = root.querySelectorAll<HTMLElement>('[data-portfolio-video]');
+  const cleanups: PlayerCleanup[] = [];
+
+  playerRoots.forEach((playerRoot, index) => {
+    const cleanup = initSinglePortfolioVideoPlayer(playerRoot, { autoplay: index === 0 });
+    if (cleanup) {
+      cleanups.push(cleanup);
+    }
+  });
+
+  if (cleanups.length === 0) {
+    return null;
+  }
+
+  return () => {
+    cleanups.forEach((cleanup) => cleanup());
+  };
+}
+
 export function destroyPortfolioVideoPlayer(root: ParentNode = document): void {
-  const video = root.querySelector<HTMLVideoElement>('[data-portfolio-video-media]');
-  video?.pause();
+  root.querySelectorAll<HTMLVideoElement>('[data-portfolio-video-media]').forEach((video) => {
+    video.pause();
+  });
 }

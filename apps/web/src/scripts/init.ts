@@ -18,6 +18,7 @@ import {
 import { destroyShopSearch, initShopSearch } from './shop-search.ts';
 import { initWorkAccordion } from './work-accordion.ts';
 
+let cleanupLayout: (() => void) | null = null;
 let cleanupPortfolioSwiper: (() => void) | null = null;
 let cleanupPortfolioVideoPlayer: (() => void) | null = null;
 let cleanupPodcastsPlayer: (() => void) | null = null;
@@ -27,7 +28,8 @@ let cleanupShopProduct: (() => void) | null = null;
 let cleanupShopCardQuickBuy: (() => void) | null = null;
 
 export function initApp(): void {
-  initLayout();
+  cleanupLayout?.();
+  cleanupLayout = initLayout();
   initExhibitionsView();
   initWorkAccordion();
   initAutoplayVideos();
@@ -93,6 +95,8 @@ function destroyShopModules(): void {
 
 initPageTransitions();
 document.addEventListener('astro:before-preparation', () => {
+  cleanupLayout?.();
+  cleanupLayout = null;
   destroyExhibitionsView();
   destroyPortfolioModules();
   destroyPodcastsModules();

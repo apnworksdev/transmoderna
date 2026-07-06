@@ -41,17 +41,39 @@ const playerBackgroundAlt = imageAlt(podcast.playerBackgroundImage, title);
   }
 
   <span class="podcast-player-bar__number">{episodeNumber}</span>
-  <span class="podcast-player-bar__series podcast-player-bar__series--plain">{podcaster}</span>
-  <span class="podcast-player-bar__title">{title}</span>
+
+  <div class="podcast-player-bar__copy">
+    <span class="podcast-player-bar__series podcast-player-bar__series--plain">{podcaster}</span>
+    <span class="podcast-player-bar__title">{title}</span>
+  </div>
 
   <button
     type="button"
-    class="podcast-player-bar__control"
+    class="podcast-player-bar__control podcast-player-bar__play"
     data-podcast-play-toggle
     disabled={!hasAudio}
     aria-label={`Play ${title}`}
   >
-    PLAY
+    <span class="podcast-player-bar__play-label" data-podcast-play-label>PLAY</span>
+    <svg
+      class="podcast-player-bar__play-icon podcast-player-bar__play-icon--play"
+      width="22"
+      height="22"
+      viewBox="0 0 10 10"
+      aria-hidden="true"
+    >
+      <path d="M3.25 2.25L7.25 5L3.25 7.75V2.25Z" fill="currentColor"></path>
+    </svg>
+    <svg
+      class="podcast-player-bar__play-icon podcast-player-bar__play-icon--pause"
+      width="22"
+      height="22"
+      viewBox="0 0 10 10"
+      aria-hidden="true"
+    >
+      <rect x="2.75" y="2.25" width="1.5" height="5.5" fill="currentColor"></rect>
+      <rect x="5.75" y="2.25" width="1.5" height="5.5" fill="currentColor"></rect>
+    </svg>
   </button>
 
   <button
@@ -71,7 +93,7 @@ const playerBackgroundAlt = imageAlt(podcast.playerBackgroundImage, title);
 
   <button
     type="button"
-    class="podcast-player-bar__control"
+    class="podcast-player-bar__control podcast-player-bar__mute"
     data-podcast-mute-toggle
     aria-pressed="false"
     disabled={!hasAudio}

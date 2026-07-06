@@ -8,7 +8,8 @@ function readServerEnvRecord(): Record<string, string | undefined> {
     SANITY_API_READ_TOKEN: import.meta.env.SANITY_API_READ_TOKEN,
     SANITY_STUDIO_SHOPIFY_DOMAIN: import.meta.env.SANITY_STUDIO_SHOPIFY_DOMAIN,
     SANITY_STUDIO_SHOPIFY_ADMIN_ACCESS_TOKEN:
-      import.meta.env.SANITY_STUDIO_SHOPIFY_ADMIN_ACCESS_TOKEN
+      import.meta.env.SANITY_STUDIO_SHOPIFY_ADMIN_ACCESS_TOKEN,
+    SHOPIFY_SYNC_SECRET: import.meta.env.SHOPIFY_SYNC_SECRET
   };
 }
 

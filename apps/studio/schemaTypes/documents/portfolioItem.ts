@@ -1,7 +1,5 @@
 import { ImagesIcon } from '@sanity/icons';
 import { defineField, defineType } from 'sanity';
-import { isVimeoUrl } from '../objects/vimeoVideo';
-
 export const portfolioItemType = defineType({
   name: 'portfolioItem',
   title: 'Portfolio item',
@@ -49,17 +47,12 @@ export const portfolioItemType = defineType({
       ]
     }),
     defineField({
-      name: 'videoUrl',
-      title: 'Vimeo URL',
-      type: 'url',
-      description: 'Paste the Vimeo share link (Share → Copy link). Played on the portfolio single page.',
-      validation: (Rule) =>
-        Rule.required().custom((value) => {
-          if (!value) {
-            return 'Add a Vimeo URL';
-          }
-          return isVimeoUrl(value) ? true : 'Use a valid vimeo.com URL';
-        })
+      name: 'media',
+      title: 'Media',
+      type: 'array',
+      of: [{ type: 'workMedia' }],
+      description: 'Images or Vimeo videos shown on the portfolio single page, in order.',
+      validation: (Rule) => Rule.required().min(1)
     }),
     defineField({
       name: 'sortOrder',

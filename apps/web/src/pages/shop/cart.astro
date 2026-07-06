@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import ContentFadeOverlay from '../../components/ContentFadeOverlay.astro';
 import ShopBackground from '../../components/shop/ShopBackground.astro';
 import ShopBottomBar from '../../components/shop/ShopBottomBar.astro';
 import ShopCartSummary from '../../components/shop/ShopCartSummary.astro';
@@ -33,6 +34,8 @@ const marketCountry = import.meta.env.PUBLIC_SHOPIFY_MARKET_COUNTRY ?? '';
     <p class="page-shop-cart-empty" data-cart-error hidden></p>
 
     <a class="page-shop-shipping-link site-header-pill" href="/shop/cart">Shipping</a>
+
+    <ContentFadeOverlay zIndex={3} />
 
     <ShopBottomBar />
   </main>

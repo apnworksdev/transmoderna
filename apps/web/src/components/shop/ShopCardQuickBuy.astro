@@ -29,6 +29,14 @@ const addLabel = !shopifyEnabled
     : allSoldOut
       ? 'Sold out'
       : 'Add to cart';
+const triggerLabel = !shopifyEnabled
+  ? 'Unavailable'
+  : variants.length === 0
+    ? 'Unavailable'
+    : allSoldOut
+      ? 'Sold out'
+      : 'Quick shop';
+const triggerDisabled = !shopifyEnabled || variants.length === 0 || allSoldOut;
 const variantsPayload = JSON.stringify(
   variants.map((variant) => ({
     id: variant.id,
@@ -49,60 +57,77 @@ const variantsPayload = JSON.stringify(
   data-default-currency={defaultCurrency}
   transition:animate="none"
 >
-  {
-    options.length > 0 ? (
-      <div class="page-shop-card-quickbuy-options" data-product-options>
-        {options.map((option) => (
-          <div class="page-shop-card-quickbuy-option" data-option-name={option.name}>
-            <div
-              class="page-shop-card-quickbuy-option-buttons"
-              role="group"
-              aria-label={`Select ${option.name}`}
-            >
-              {option.values.map((value) => {
-                const isSelected = initialSelections.get(option.name) === value;
-                return (
-                  <button
-                    type="button"
-                    class:list={['page-shop-buy-option-btn', { 'is-selected': isSelected }]}
-                    data-option-value={value}
-                    data-option-group={option.name}
-                    aria-pressed={isSelected ? 'true' : 'false'}
-                  >
-                    {value}
-                  </button>
-                );
-              })}
+  <button
+    type="button"
+    class="page-shop-card-quickbuy-trigger"
+    data-quickshop-trigger
+    disabled={triggerDisabled}
+    aria-expanded="false"
+    aria-controls={`quickshop-panel-${buyId}`}
+  >
+    {triggerLabel}
+  </button>
+
+  <div
+    id={`quickshop-panel-${buyId}`}
+    class="page-shop-card-quickbuy-panel"
+    data-quickshop-panel
+  >
+    {
+      options.length > 0 ? (
+        <div class="page-shop-card-quickbuy-options" data-product-options>
+          {options.map((option) => (
+            <div class="page-shop-card-quickbuy-option" data-option-name={option.name}>
+              <div
+                class="page-shop-card-quickbuy-option-buttons"
+                role="group"
+                aria-label={`Select ${option.name}`}
+              >
+                {option.values.map((value) => {
+                  const isSelected = initialSelections.get(option.name) === value;
+                  return (
+                    <button
+                      type="button"
+                      class:list={['page-shop-buy-option-btn', { 'is-selected': isSelected }]}
+                      data-option-value={value}
+                      data-option-group={option.name}
+                      aria-pressed={isSelected ? 'true' : 'false'}
+                    >
+                      {value}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-    ) : null
-  }
+          ))}
+        </div>
+      ) : null
+    }
 
-  <div class="page-shop-card-quickbuy-footer">
-    <div class="page-shop-buy-qty">
-      <div class="page-shop-buy-qty-controls page-shop-card-quickbuy-qty-controls">
-        <button type="button" class="page-shop-buy-qty-btn" data-qty-minus aria-label="Decrease quantity">
-          −
-        </button>
-        <span class="page-shop-buy-qty-value" data-qty-value>1</span>
-        <button type="button" class="page-shop-buy-qty-btn" data-qty-plus aria-label="Increase quantity">
-          +
-        </button>
+    <div class="page-shop-card-quickbuy-footer">
+      <div class="page-shop-buy-qty">
+        <div class="page-shop-buy-qty-controls page-shop-card-quickbuy-qty-controls">
+          <button type="button" class="page-shop-buy-qty-btn" data-qty-minus aria-label="Decrease quantity">
+            −
+          </button>
+          <span class="page-shop-buy-qty-value" data-qty-value>1</span>
+          <button type="button" class="page-shop-buy-qty-btn" data-qty-plus aria-label="Increase quantity">
+            +
+          </button>
+        </div>
       </div>
+
+      <button
+        type="button"
+        class="page-shop-buy-add page-shop-card-quickbuy-add"
+        data-add-to-cart
+        data-qty="1"
+        data-default-label="Add to cart"
+        disabled={!shopifyEnabled || variants.length === 0 || !defaultVariant?.availableForSale}
+      >
+        {addLabel}
+      </button>
     </div>
-
-    <button
-      type="button"
-      class="page-shop-buy-add page-shop-card-quickbuy-add"
-      data-add-to-cart
-      data-qty="1"
-      data-default-label="Add to cart"
-      disabled={!shopifyEnabled || variants.length === 0 || !defaultVariant?.availableForSale}
-    >
-      {addLabel}
-    </button>
   </div>
 
   <div class="page-shop-buy-variants-hidden" aria-hidden="true">

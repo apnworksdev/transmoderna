@@ -1,24 +1,17 @@
 import { logSyncEvent } from './logger.js';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type'
-};
-
 function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
   return new Response(JSON.stringify(body), {
     ...init,
     headers: {
       'Content-Type': 'application/json',
-      ...corsHeaders,
       ...(init.headers ?? {})
     }
   });
 }
 
 export function handleOptions(): Response {
-  return new Response(null, { status: 204, headers: corsHeaders });
+  return new Response(null, { status: 204 });
 }
 
 export async function handlePost(request: Request): Promise<Response> {

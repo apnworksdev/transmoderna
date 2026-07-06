@@ -146,32 +146,37 @@ export async function getShopPage(): Promise<ShopPageData | null> {
     return null;
   }
 
-  const doc = await client.fetch<{
-    intro?: PortableTextBlock[];
-    products?: ShopProduct[] | null;
-  } | null>(
-    `*[_id == $id][0]{
+  try {
+    const doc = await client.fetch<{
+      intro?: PortableTextBlock[];
+      products?: ShopProduct[] | null;
+    } | null>(
+      `*[_id == $id][0]{
       intro,
       "products": products[]->${productFields}
     }`,
-    { id: SHOP_DOCUMENT_ID }
-  );
-
-  let products = filterProducts(doc?.products);
-  if (products.length === 0) {
-    const allProducts = await client.fetch<ShopProduct[]>(
-      `*[_type == "product" && coalesce(store.isDeleted, false) != true && coalesce(store.status, "active") == "active"] | order(store.title asc) ${productFields}`
+      { id: SHOP_DOCUMENT_ID }
     );
-    products = filterProducts(allProducts);
+
+    let products = filterProducts(doc?.products);
+    if (products.length === 0) {
+      const allProducts = await client.fetch<ShopProduct[]>(
+        `*[_type == "product" && coalesce(store.isDeleted, false) != true && coalesce(store.status, "active") == "active"] | order(store.title asc) ${productFields}`
+      );
+      products = filterProducts(allProducts);
+    }
+
+    const value: ShopPageData = {
+      intro: doc?.intro,
+      products
+    };
+
+    shopPageCache = { expiresAt: now + SHOP_CACHE_TTL_MS, value };
+    return value;
+  } catch (error) {
+    console.error('[shop] fetch failed:', error);
+    return shopPageCache?.value ?? null;
   }
-
-  const value: ShopPageData = {
-    intro: doc?.intro,
-    products
-  };
-
-  shopPageCache = { expiresAt: now + SHOP_CACHE_TTL_MS, value };
-  return value;
 }
 
 export async function getShopProductByHandle(handle: string): Promise<ShopProduct | null> {
@@ -180,12 +185,17 @@ export async function getShopProductByHandle(handle: string): Promise<ShopProduc
     return null;
   }
 
-  const product = await client.fetch<ShopProduct | null>(
-    `*[_type == "product" && store.slug.current == $handle && coalesce(store.isDeleted, false) != true && coalesce(store.status, "active") == "active"][0]${productFields}`,
-    { handle: handle.trim() }
-  );
+  try {
+    const product = await client.fetch<ShopProduct | null>(
+      `*[_type == "product" && store.slug.current == $handle && coalesce(store.isDeleted, false) != true && coalesce(store.status, "active") == "active"][0]${productFields}`,
+      { handle: handle.trim() }
+    );
 
-  return product?.store ? product : null;
+    return product?.store ? product : null;
+  } catch (error) {
+    console.error('[shop] product fetch failed:', error);
+    return null;
+  }
 }
 
 export function productHandle(product: ShopProduct): string | undefined {

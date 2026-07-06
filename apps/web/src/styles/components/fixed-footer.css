@@ -34,3 +34,19 @@ body.fixed-footer-big .site-fixed-footer {
   overflow: hidden;
   pointer-events: none;
 }
+
+@media (max-width: 820px) {
+  .site-fixed-footer {
+    filter: blur(40px);
+  }
+}
+
+@media (min-width: 821px) {
+  body.page-exhibition-detail.fixed-footer-big {
+    padding-bottom: 0;
+  }
+
+  body.page-exhibition-detail .site-fixed-footer {
+    display: none;
+  }
+}
