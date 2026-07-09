@@ -43,6 +43,7 @@
   min-height: 100dvh;
   isolation: isolate;
   background-color: var(--background-color);
+  overflow-y: hidden;
 }
 
 .page-portfolio-gradient {

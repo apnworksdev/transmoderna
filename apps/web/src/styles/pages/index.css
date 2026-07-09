@@ -104,3 +104,9 @@ html.intro-pending body.page-index [data-site-chrome] {
     transition: none;
   }
 }
+
+@media (max-width: 820px) {
+  .page-index-intro-text {
+    padding: 10px 10px 66px;
+  }
+}

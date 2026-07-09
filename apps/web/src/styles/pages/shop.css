@@ -396,12 +396,12 @@
 
 .page-shop-bottom-pill {
   position: relative;
+  min-width: 100px;
 }
 
 .page-shop-bottom-search {
   position: relative;
   display: inline-flex;
-  min-width: 100px;
 }
 
 .page-shop-bottom-search-btn,
@@ -1062,7 +1062,7 @@
   }
 
   .page-shop-product {
-    padding: 77px 15px 25px;
+    padding: 77px 15px;
   }
 
   .page-shop-product-toolbar {
@@ -1209,9 +1209,10 @@
   }
 
   .page-shop-product-layout .page-shop-buy-option-btn {
-    width: 32px;
+    min-width: 32px;
+    width: auto;
     height: 30px;
-    padding: 0;
+    padding: 0 6px;
   }
 
   .page-shop-buy-actions {
@@ -1369,7 +1370,7 @@
     line-height: var(--line-height-xs);
   }
 
-  .page-shop-product .page-shop-bottom,
+  /* .page-shop-product .page-shop-bottom, */
   .page-shop-cart .page-shop-bottom {
     display: none;
   }

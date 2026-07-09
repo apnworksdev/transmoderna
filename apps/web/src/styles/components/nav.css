@@ -387,15 +387,13 @@ body.site-menu-open .site-header-pill:hover {
     width: auto;
     height: 100%;
     max-width: 100%;
-    aspect-ratio: 4 / 5;
     align-self: center;
   }
 
   .site-menu-media {
-    width: 100%;
+    width: 10dvh;
     height: 100%;
     padding-bottom: 0;
-    aspect-ratio: 4 / 5;
   }
   
   .site-footer img {

@@ -230,8 +230,8 @@
   height: 100%;
   object-fit: cover;
   object-position: center;
-  filter: blur(var(--podcast-bar-bg-blur));
-  opacity: 0.45;
+  filter: 3px;
+  opacity: 0.85;
   transform: scale(1.08);
 }
 
@@ -262,7 +262,7 @@
     font-size: var(--font-size-s);
     line-height: var(--line-height-s);
     font-weight: var(--font-weight-bold);
-    border-radius: 16px;
+    border-radius: 6px;
     opacity: 1;
     background: linear-gradient(180deg, rgba(34, 34, 34, 0.98) 0%, rgba(8, 8, 8, 1) 100%);
   }
@@ -430,8 +430,8 @@
   }
 
   .podcast-player-bar--detail .podcast-player-bar__bg img {
-    filter: blur(12px);
-    opacity: 0.55;
+    filter: blur(3px);
+    opacity: 0.85;
   }
 
   .podcast-player-bar--detail .podcast-player-bar__bg::after {

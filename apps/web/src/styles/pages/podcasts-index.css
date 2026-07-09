@@ -37,6 +37,8 @@
 @media (max-width: 820px) {
   .page-podcasts {
     padding-top: 170px;
+    padding-left: 15px;
+    padding-right: 15px;
   }
 
   .page-podcasts-list {
