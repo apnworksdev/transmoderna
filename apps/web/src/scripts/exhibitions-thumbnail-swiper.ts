@@ -13,6 +13,7 @@ import {
   prefersReducedMotion,
   throttleRAF,
   waitTransition,
+  waitAllTransitions,
   wrapIndex
 } from './exhibitions-swiper-shared.ts';
 
@@ -27,6 +28,8 @@ export type ExhibitionThumbnailItem = {
 
 const WINDOW_RADIUS = 2;
 const SLOT_OFFSETS = [-2, -1, 0, 1, 2] as const;
+const INCOMING_CENTER_SLOT = { next: '1', prev: '-1' } as const;
+const SLIDE_ANIMATION_TIMEOUT_MS = 900;
 
 export function initExhibitionsThumbnailSwiper(root: ParentNode = document): SwiperCleanup | null {
   const thumbnailView = root.querySelector<HTMLElement>('[data-exhibitions-thumbnail]');
@@ -142,9 +145,16 @@ export function initExhibitionsThumbnailSwiper(root: ParentNode = document): Swi
     slot.setAttribute('aria-hidden', 'false');
   };
 
+  const clearIncomingCenter = () => {
+    slots.forEach((slot) => {
+      slot.classList.remove('is-incoming-center');
+    });
+  };
+
   const snapAfterAnimation = () => {
     hideEnterSlot(enterRight);
     hideEnterSlot(enterLeft);
+    clearIncomingCenter();
     thumbnailView.classList.add('is-resetting');
     thumbnailView.classList.remove('is-animating-next', 'is-animating-prev');
     fillSlots();
@@ -172,7 +182,37 @@ export function initExhibitionsThumbnailSwiper(root: ParentNode = document): Swi
     await nextFrame();
     thumbnailView.classList.remove(prepClass);
     thumbnailView.classList.add(animClass);
-    await waitTransition(track);
+
+    const incomingCenterOffset = INCOMING_CENTER_SLOT[direction];
+    const incomingCenterSlot = thumbnailView.querySelector<HTMLElement>(
+      `[data-exhibitions-thumb-slot="${incomingCenterOffset}"]`
+    );
+
+    clearIncomingCenter();
+    slots.forEach((slot) => {
+      const offset = slot.dataset.exhibitionsThumbSlot;
+      slot.classList.toggle('is-active', offset === incomingCenterOffset);
+      slot.classList.toggle('is-incoming-center', offset === incomingCenterOffset);
+    });
+
+    if (incomingCenterSlot) {
+      const isMobile = window.matchMedia('(max-width: 820px)').matches;
+      const transitionProperties = isMobile
+        ? (['transform'] as const)
+        : (['transform', 'width'] as const);
+
+      await waitAllTransitions(incomingCenterSlot, {
+        slideClass: 'page-exhibitions-thumbnail-slide',
+        propertyNames: [...transitionProperties],
+        timeoutMs: SLIDE_ANIMATION_TIMEOUT_MS
+      });
+    } else {
+      await waitTransition(track, {
+        slideClass: 'page-exhibitions-thumbnail-slide',
+        propertyNames: ['transform', 'width'],
+        timeoutMs: SLIDE_ANIMATION_TIMEOUT_MS
+      });
+    }
   };
 
   const goToInstant = (index: number) => {
@@ -268,5 +308,6 @@ export function initExhibitionsThumbnailSwiper(root: ParentNode = document): Swi
     );
     hideEnterSlot(enterRight);
     hideEnterSlot(enterLeft);
+    clearIncomingCenter();
   };
 }

@@ -1,10 +1,10 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import AboutLinkList from '../../components/AboutLinkList.astro';
-import ContentFadeOverlay from '../../components/ContentFadeOverlay.astro';
-import PortableTextHtml from '../../components/PortableTextHtml.astro';
-import { getAbout, imageAlt, urlForSanityImage } from '../../lib/sanity';
-import '../../styles/pages/about.css';
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import AboutLinkList from "../../components/AboutLinkList.astro";
+import ContentFadeOverlay from "../../components/ContentFadeOverlay.astro";
+import PortableTextHtml from "../../components/PortableTextHtml.astro";
+import { getAbout, imageAlt, urlForSanityImage } from "../../lib/sanity";
+import "../../styles/pages/about.css";
 
 const about = await getAbout();
 const teamMembers = about?.teamMembers ?? [];
@@ -28,127 +28,164 @@ const copyrightYear = new Date().getFullYear();
 
     {
       !about ? (
-        <p class="page-about-empty">No about content yet. Add content in Sanity Studio → About.</p>
+        <p class="page-about-empty">
+          No about content yet. Add content in Sanity Studio → About.
+        </p>
       ) : (
         <div class="page-about-inner">
           <div class="page-about-left">
             <section class="page-about-section">
               <h1 class="page-about-label">About</h1>
-              {
-                about.description ? (
-                  <div class="page-about-description">
-                    <PortableTextHtml blocks={about.description} />
-                  </div>
-                ) : null
-              }
+              {about.description ? (
+                <div class="page-about-description">
+                  <PortableTextHtml blocks={about.description} />
+                </div>
+              ) : null}
             </section>
 
             <div class="page-about-left-bottom">
-              {
-                about.contact?.links && about.contact.links.length > 0 ? (
-                  <section class="page-about-section">
-                    <h2 class="page-about-label">{about.contact.heading ?? 'Contact'}</h2>
-                    <AboutLinkList links={about.contact.links} />
-                  </section>
-                ) : null
-              }
+              {about.contact?.links && about.contact.links.length > 0 ? (
+                <section class="page-about-section">
+                  <h2 class="page-about-label">
+                    {about.contact.heading ?? "Contact"}
+                  </h2>
+                  <AboutLinkList links={about.contact.links} />
+                </section>
+              ) : null}
 
-              {
-                about.connect?.links && about.connect.links.length > 0 ? (
-                  <section class="page-about-section">
-                    <h2 class="page-about-label">{about.connect.heading ?? 'Connect'}</h2>
-                    <AboutLinkList links={about.connect.links} />
-                  </section>
-                ) : null
-              }
+              {about.connect?.links && about.connect.links.length > 0 ? (
+                <section class="page-about-section">
+                  <h2 class="page-about-label">
+                    {about.connect.heading ?? "Connect"}
+                  </h2>
+                  <AboutLinkList links={about.connect.links} />
+                </section>
+              ) : null}
             </div>
           </div>
 
-          {
-            teamMembers.length > 0 ? (
-              <section class="page-about-section page-about-team" data-about-team>
-                <h2 class="page-about-label">Team</h2>
-                <ul class="page-about-team-list">
-                  {
-                    teamMembers.map((member) => {
-                      const imageSrc = urlForSanityImage(member.image, { width: 1400 });
-                      const memberAlt = imageAlt(member.image, member.name ?? 'Team member');
-                      const hasImage = Boolean(imageSrc);
-                      const hasDescription = Boolean(member.description?.length);
-                      const showToggle = hasImage && hasDescription;
+          {teamMembers.length > 0 ? (
+            <section class="page-about-section page-about-team" data-about-team>
+              <h2 class="page-about-label">Team</h2>
+              <ul class="page-about-team-list">
+                {teamMembers.map((member) => {
+                  const imageSrc = urlForSanityImage(member.image, {
+                    width: 1400,
+                  });
+                  const memberAlt = imageAlt(
+                    member.image,
+                    member.name ?? "Team member",
+                  );
+                  const hasImage = Boolean(imageSrc);
+                  const hasDescription = Boolean(member.description?.length);
+                  const hasMeta = Boolean(member.position || member.country);
+                  const hasInfo = hasDescription || hasMeta;
+                  const showToggle = hasImage && hasInfo;
 
-                      return (
-                        <li>
-                          <details class="page-about-team-item" data-about-member>
-                            <summary class="page-about-team-name">{member.name}</summary>
+                  return (
+                    <li>
+                      <details class="page-about-team-item" data-about-member>
+                        <summary class="page-about-team-name">
+                          {member.name}
+                        </summary>
 
-                            <div class="page-about-member-aspect">
-                              <div class="page-about-member-visual">
-                              {
-                                hasImage ? (
-                                  <figure class="page-about-member-figure" data-about-member-figure>
-                                    <img
-                                      src={imageSrc}
-                                      alt={memberAlt}
-                                      width={1400}
-                                      loading="lazy"
-                                      decoding="async"
+                        <div class="page-about-member-aspect">
+                          <div
+                            class="page-about-member-visual"
+                            data-about-member-visual
+                          >
+                            {hasImage ? (
+                              <figure
+                                class="page-about-member-figure"
+                                data-about-member-figure
+                              >
+                                <img
+                                  src={imageSrc}
+                                  alt={memberAlt}
+                                  width={1400}
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                              </figure>
+                            ) : !hasInfo ? (
+                              <div
+                                class="page-about-member-placeholder"
+                                aria-hidden="true"
+                              />
+                            ) : null}
+
+                            {hasInfo ? (
+                              <div
+                                class="page-about-member-info"
+                                data-about-member-info
+                                hidden={hasImage}
+                              >
+                                <div class="page-about-member-info-top">
+                                  {member.name || member.country ? (
+                                    <div class="page-about-member-info-top-name">
+                                      {member.name ? (
+                                        <p class="page-about-member-name">
+                                          {member.name}
+                                        </p>
+                                      ) : null}
+                                      {member.country ? (
+                                        <p class="page-about-member-country">
+                                          ({member.country})
+                                        </p>
+                                      ) : null}
+                                    </div>
+                                  ) : null}
+                                  {member.position ? (
+                                    <div class="page-about-member-info-top-position">
+                                      <p class="page-about-member-position">
+                                        {member.position}
+                                      </p>
+                                    </div>
+                                  ) : null}
+                                </div>
+                                {hasDescription ? (
+                                  <div class="page-about-member-description">
+                                    <PortableTextHtml
+                                      blocks={member.description}
                                     />
-                                  </figure>
-                                ) : !hasDescription ? (
-                                  <div class="page-about-member-placeholder" aria-hidden="true" />
-                                ) : null
-                              }
-
-                              {
-                                hasDescription ? (
-                                  <div
-                                    class="page-about-member-info"
-                                    data-about-member-info
-                                    hidden={hasImage}
-                                  >
-                                    <PortableTextHtml blocks={member.description} />
                                   </div>
-                                ) : null
-                              }
-
-                              {
-                                showToggle ? (
-                                  <div
-                                    class="page-about-member-toggle"
-                                    role="group"
-                                    aria-label={`${member.name ?? 'Member'} view`}
-                                  >
-                                    <button
-                                      type="button"
-                                      class="page-about-member-toggle-btn is-active"
-                                      data-about-view="img"
-                                      aria-pressed="true"
-                                    >
-                                      Img
-                                    </button>
-                                    <button
-                                      type="button"
-                                      class="page-about-member-toggle-btn"
-                                      data-about-view="info"
-                                      aria-pressed="false"
-                                    >
-                                      Info
-                                    </button>
-                                  </div>
-                                ) : null
-                              }
+                                ) : null}
                               </div>
-                            </div>
-                          </details>
-                        </li>
-                      );
-                    })
-                  }
-                </ul>
-              </section>
-            ) : null
-          }
+                            ) : null}
+
+                            {showToggle ? (
+                              <div
+                                class="page-about-member-toggle"
+                                role="group"
+                                aria-label={`${member.name ?? "Member"} view`}
+                              >
+                                <button
+                                  type="button"
+                                  class="page-about-member-toggle-btn is-active"
+                                  data-about-view="img"
+                                  aria-pressed="true"
+                                >
+                                  Img
+                                </button>
+                                <button
+                                  type="button"
+                                  class="page-about-member-toggle-btn"
+                                  data-about-view="info"
+                                  aria-pressed="false"
+                                >
+                                  Info
+                                </button>
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      </details>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ) : null}
         </div>
       )
     }
@@ -156,7 +193,11 @@ const copyrightYear = new Date().getFullYear();
     <ContentFadeOverlay color="var(--gray-color)" zIndex={1} />
 
     <footer class="page-about-footer">
-      <time class="page-about-clock site-header-pill" datetime="" data-about-clock>
+      <time
+        class="page-about-clock site-header-pill"
+        datetime=""
+        data-about-clock
+      >
         00:00:00
       </time>
       <p class="page-about-copyright">

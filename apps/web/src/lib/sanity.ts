@@ -167,6 +167,8 @@ export type PodcastPageDocument = {
 
 export type TeamMember = {
   name?: string;
+  position?: string;
+  country?: string;
   description?: PortableTextBlock[];
   image?: SanityImageWithAlt;
 };
@@ -793,6 +795,8 @@ export async function getAbout(): Promise<AboutDocument | null> {
       description,
       teamMembers[]{
         name,
+        position,
+        country,
         description,
         image { ..., alt, asset->{ url, mimeType } }
       },

@@ -11,15 +11,15 @@ function getDefaultView(member: HTMLDetailsElement): MemberView {
 }
 
 function setMemberView(member: HTMLDetailsElement, view: MemberView): void {
-  const figure = member.querySelector<HTMLElement>('[data-about-member-figure]');
+  const visual = member.querySelector<HTMLElement>('[data-about-member-visual]');
   const info = member.querySelector<HTMLElement>('[data-about-member-info]');
   const imgBtn = member.querySelector<HTMLButtonElement>('[data-about-view="img"]');
   const infoBtn = member.querySelector<HTMLButtonElement>('[data-about-view="info"]');
 
   const showInfo = view === 'info' && info != null;
 
-  if (figure) {
-    figure.hidden = showInfo;
+  if (visual) {
+    visual.classList.toggle('is-info-view', showInfo);
   }
 
   if (info) {

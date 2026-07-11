@@ -26,17 +26,19 @@ const showSearchField = initialQuery.length > 0;
         Search
       </button>
 
-      <input
-        id="shop-search-field"
-        type="search"
-        class="page-shop-bottom-pill site-header-pill page-shop-bottom-search-field"
-        data-shop-search-input
-        value={initialQuery}
-        placeholder="Search"
-        autocomplete="off"
-        spellcheck="false"
-        aria-label="Search products"
-      />
+      <div class="page-shop-bottom-search-field-wrap">
+        <input
+          id="shop-search-field"
+          type="search"
+          class="page-shop-bottom-pill site-header-pill page-shop-bottom-search-field"
+          data-shop-search-input
+          value={initialQuery}
+          placeholder="Search"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search products"
+        />
+      </div>
     </div>
 
     <a

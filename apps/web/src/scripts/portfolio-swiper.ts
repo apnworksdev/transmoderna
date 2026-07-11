@@ -46,8 +46,7 @@ const ANIMATION_CLASSES = [
   'is-jump-prep',
   'is-jumping',
   'is-resetting',
-  'is-final-snap',
-  'is-edge-reveal'
+  'is-final-snap'
 ] as const;
 
 function formatCarouselLabel(item: PortfolioCarouselItem): string {
@@ -170,10 +169,6 @@ function finishPortfolioReset(swiperRoot: HTMLElement): void {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       swiperRoot.classList.remove('is-resetting', 'is-final-snap');
-      swiperRoot.classList.add('is-edge-reveal');
-      window.setTimeout(() => {
-        swiperRoot.classList.remove('is-edge-reveal');
-      }, 320);
     });
   });
 }
@@ -298,21 +293,11 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
     }
   };
 
-  const snapAfterAnimation = ({ final = true }: { final?: boolean } = {}) => {
-    hideAllEnterSlots();
-    swiperRoot.classList.remove('is-animating-next', 'is-animating-prev', 'is-jump-prep', 'is-jumping');
+  const snapAfterAnimation = () => {
     swiperRoot.classList.add('is-resetting');
-
-    if (final) {
-      swiperRoot.classList.add('is-final-snap');
-    }
-
     fillSlots();
-
-    if (final) {
-      finishPortfolioReset(swiperRoot);
-      return;
-    }
+    swiperRoot.classList.remove('is-animating-next', 'is-animating-prev', 'is-jump-prep', 'is-jumping');
+    hideAllEnterSlots();
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -344,12 +329,19 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
     await nextFrame();
     swiperRoot.classList.remove(prepClass);
     swiperRoot.classList.add(animClass);
-    await waitTransition(track, {
-      slideClass: 'page-portfolio-slide',
-      figureClass: 'page-portfolio-slide-inner',
-      propertyNames: ['transform', 'width'],
-      timeoutMs
-    });
+    await Promise.all([
+      waitTransition(track, {
+        slideClass: 'page-portfolio-slide',
+        figureClass: 'page-portfolio-slide-inner',
+        propertyNames: ['transform', 'width'],
+        timeoutMs
+      }),
+      waitTransition(enterSlot, {
+        slideClass: 'page-portfolio-slide',
+        propertyNames: ['transform', 'opacity'],
+        timeoutMs
+      })
+    ]);
   };
 
   const goToInstant = (index: number) => {
@@ -393,7 +385,7 @@ export function initPortfolioSwiper(root: ParentNode = document): SwiperCleanup 
           chained ? CHAINED_SLIDE_TIMEOUT_MS : SINGLE_SLIDE_TIMEOUT_MS
         );
         activeIndex = wrapIndex(activeIndex + direction, total);
-        snapAfterAnimation({ final: step === steps - 1 });
+        snapAfterAnimation();
       }
     } finally {
       swiperRoot.style.removeProperty('--portfolio-slide-duration');

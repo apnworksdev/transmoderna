@@ -12,6 +12,17 @@ export const teamMemberType = defineType({
       validation: (Rule) => Rule.required()
     }),
     defineField({
+      name: 'position',
+      title: 'Position',
+      type: 'text',
+      rows: 4
+    }),
+    defineField({
+      name: 'country',
+      title: 'Country',
+      type: 'string'
+    }),
+    defineField({
       name: 'description',
       title: 'Description',
       type: 'array',

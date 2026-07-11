@@ -182,6 +182,7 @@
 }
 
 .page-about-member-figure {
+  z-index: 0;
   margin: 0;
   border-radius: 24px;
   overflow: hidden;
@@ -198,12 +199,58 @@
 }
 
 .page-about-member-info {
-  overflow: auto;
-  
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: var(--margin);
+  overflow: hidden;
 }
 
-.page-about-member-info[hidden],
-.page-about-member-figure[hidden] {
+.page-about-member-visual.is-info-view .page-about-member-info {
+  border-radius: 24px;
+  background: rgba(48, 48, 48, 0.92);
+  backdrop-filter: blur(12px);
+  padding-bottom: calc(var(--margin) + 52px);
+}
+
+.page-about-member-info-top {
+  flex: 1 1 0;
+  min-height: min-content;
+  display: flex;
+  width: 100%;
+  gap: 8px;
+}
+
+.page-about-member-description {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.page-about-member-info-top-name {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.page-about-member-info-top-position {
+  flex: 1;
+}
+
+.page-about-member-name,
+.page-about-member-position,
+.page-about-member-country {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: 13px;
+}
+
+.page-about-member-position {
+  white-space: pre-line;
+}
+
+.page-about-member-info[hidden] {
   display: none;
 }
 

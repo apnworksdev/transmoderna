@@ -102,6 +102,8 @@ export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCl
   let touchVelocity = 0;
   let centeredIndex = getStoredExhibitionsActiveIndex(total);
   let layoutFrame = 0;
+  let isTrackAnimating = false;
+  let trackAnimationFrame = 0;
   const preload = createImagePreloader();
   const reducedMotion = prefersReducedMotion();
 
@@ -144,7 +146,18 @@ export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCl
   const scrollIndexToItemIndex = (scrollIndex: number) => wrapIndex(scrollIndex, total);
 
   const isScrollingFast = () =>
-    momentumFrame !== 0 || Math.abs(velocity) > MOMENTUM_MIN || (isTouching && touchMoved);
+    momentumFrame !== 0 ||
+    Math.abs(velocity) > MOMENTUM_MIN ||
+    (isTouching && touchMoved) ||
+    isTrackAnimating;
+
+  const getVisualDistance = (slide: HTMLElement): number => {
+    const scrollerRect = scroller.getBoundingClientRect();
+    const viewportCenter = scrollerRect.top + scrollerRect.height / 2;
+    const slideRect = slide.getBoundingClientRect();
+    const slideCenter = slideRect.top + slideRect.height / 2;
+    return Math.abs(slideCenter - viewportCenter) / itemHeight;
+  };
 
   const syncMotionClass = () => {
     fullView.classList.toggle('is-scrolling', isScrollingFast());
@@ -201,6 +214,29 @@ export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCl
     scheduleBackground(index);
   };
 
+  const stopTrackAnimationLoop = () => {
+    if (trackAnimationFrame) {
+      cancelAnimationFrame(trackAnimationFrame);
+      trackAnimationFrame = 0;
+    }
+  };
+
+  const startTrackAnimationLoop = () => {
+    stopTrackAnimationLoop();
+
+    const tick = () => {
+      trackAnimationFrame = 0;
+      if (!isTrackAnimating) {
+        return;
+      }
+
+      updateSlides();
+      trackAnimationFrame = requestAnimationFrame(tick);
+    };
+
+    trackAnimationFrame = requestAnimationFrame(tick);
+  };
+
   const applyTransform = (animate: boolean) => {
     if (itemHeight <= 0 || scroller.clientHeight <= 0) {
       return;
@@ -213,7 +249,14 @@ export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCl
 
     track.style.transition =
       animate && !reducedMotion ? `transform ${SNAP_TRANSITION_MS}ms var(--ease, ease)` : 'none';
+    isTrackAnimating = animate && !reducedMotion;
     track.style.transform = `translate3d(0, ${-offset}px, 0)`;
+
+    if (isTrackAnimating) {
+      startTrackAnimationLoop();
+    } else {
+      stopTrackAnimationLoop();
+    }
   };
 
   const updateSlides = () => {
@@ -224,6 +267,8 @@ export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCl
     const centerIndex = scrollY / itemHeight;
     const scrolling = isScrollingFast();
 
+    const useLayoutDistance = isTrackAnimating;
+
     for (const slide of slides) {
       const loopIndex = Number(slide.dataset.exhibitionsLoopIndex);
       if (!Number.isFinite(loopIndex)) {
@@ -231,26 +276,29 @@ export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCl
       }
 
       const distance = Math.abs(loopIndex - centerIndex);
+      const visualDistance = useLayoutDistance
+        ? getVisualDistance(slide)
+        : distance;
       const itemIndex = scrollIndexToItemIndex(loopIndex);
       const item = items[itemIndex];
-      const isCentered = distance < 0.45;
+      const isCentered = visualDistance < 0.45;
       const isVisible = distance <= VISIBLE_RADIUS + 0.5;
+      const nextOpacity = isVisible ? String(opacityForDistance(visualDistance)) : '0';
 
       slide.classList.toggle('is-hidden', !isVisible);
 
       if (!isVisible) {
         slide.classList.remove('is-active');
-        slide.style.opacity = '0';
+        if (slide.style.opacity !== '0') {
+          slide.style.opacity = '0';
+        }
         continue;
       }
 
-      slide.style.opacity = String(opacityForDistance(distance));
-
-      if (scrolling) {
-        slide.classList.remove('is-active');
-      } else {
-        slide.classList.toggle('is-active', isCentered);
+      if (slide.style.opacity !== nextOpacity) {
+        slide.style.opacity = nextOpacity;
       }
+      slide.classList.toggle('is-active', isCentered);
 
       const link = slide.querySelector<HTMLAnchorElement>('.page-exhibitions-full-slide-link');
       if (link) {
@@ -550,6 +598,8 @@ export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCl
       return;
     }
     track.style.transition = 'none';
+    isTrackAnimating = false;
+    stopTrackAnimationLoop();
     finishSnap();
   };
 
@@ -607,6 +657,8 @@ export function initExhibitionsFullSwiper(root: ParentNode = document): SwiperCl
       cancelAnimationFrame(layoutFrame);
     }
     stopMomentum();
+    stopTrackAnimationLoop();
+    isTrackAnimating = false;
     window.clearTimeout(snapTimer);
     window.clearTimeout(backgroundTimer);
     fullView.classList.remove('is-ready', 'is-hiding', 'is-scrolling');

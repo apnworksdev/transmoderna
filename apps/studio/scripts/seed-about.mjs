@@ -34,6 +34,7 @@ const TEAM_MEMBERS = [
   {
     _key: 'alan',
     name: 'Alan Ixba',
+    position: 'Artist\nDeveloper',
     description: paragraphs([
       'Artist and developer working across real-time graphics, interactive installations, and live visual systems for club and gallery contexts.'
     ])
@@ -41,6 +42,7 @@ const TEAM_MEMBERS = [
   {
     _key: 'ana',
     name: 'Ana Ofak',
+    position: 'Co-founder\nCreative Director\nWriter',
     description: paragraphs([
       'Creative director and writer. Co-founder of Transmoderna, working across editorial, visual identity, and new media art theory.'
     ])
@@ -48,6 +50,7 @@ const TEAM_MEMBERS = [
   {
     _key: 'carlos',
     name: 'Carlos Minozzi',
+    position: 'Producer\nSound Designer',
     description: paragraphs([
       'Producer and sound designer exploring the overlap between electronic music production, spatial audio, and digital performance.'
     ])
@@ -55,6 +58,7 @@ const TEAM_MEMBERS = [
   {
     _key: 'joe',
     name: 'Joe Baran',
+    position: 'Creative Technologist',
     description: paragraphs([
       'Creative technologist building tools and environments for virtual reality, game development, and immersive storytelling.'
     ])
@@ -62,6 +66,7 @@ const TEAM_MEMBERS = [
   {
     _key: 'marta',
     name: 'Marta Carro',
+    position: 'Visual Artist\nResearcher',
     description: paragraphs([
       'Visual artist and researcher focused on moving image, scenography, and the aesthetics of hybrid physical-digital exhibitions.'
     ])
@@ -69,6 +74,7 @@ const TEAM_MEMBERS = [
   {
     _key: 'steffen',
     name: 'Steffen Berkhahn',
+    position: 'Co-founder\nMusic Producer\nDJ',
     description: paragraphs([
       'Music producer and DJ, also known as Dixon. Co-founder of Transmoderna, bridging electronic music culture with digital art production.'
     ])
@@ -76,6 +82,7 @@ const TEAM_MEMBERS = [
   {
     _key: 'chloe',
     name: 'Chloe Karnezi',
+    position: 'Designer\nArt Director',
     description: paragraphs([
       'Designer and art director shaping visual languages for releases, events, and cross-disciplinary projects within the collective.'
     ])
@@ -84,6 +91,8 @@ const TEAM_MEMBERS = [
   _type: 'teamMember',
   _key: member._key,
   name: member.name,
+  position: member.position,
+  country: 'DE',
   description: member.description
 }));
 
@@ -128,8 +137,24 @@ const document = {
   }
 };
 
-const existing = await client.fetch(`*[_id == $id][0]{ _id }`, {
+const existing = await client.fetch(`*[_id == $id][0]{ _id, teamMembers }`, {
   id: ABOUT_DOCUMENT_ID
+});
+
+const existingMembersByKey = new Map(
+  (existing?.teamMembers ?? []).map((member) => [member._key, member])
+);
+
+const teamMembers = document.teamMembers.map((member) => {
+  const existingMember = existingMembersByKey.get(member._key);
+  if (!existingMember?.image) {
+    return member;
+  }
+
+  return {
+    ...member,
+    image: existingMember.image
+  };
 });
 
 if (existing) {
@@ -137,15 +162,18 @@ if (existing) {
     .patch(ABOUT_DOCUMENT_ID)
     .set({
       description: document.description,
-      teamMembers: document.teamMembers,
+      teamMembers,
       contact: document.contact,
       connect: document.connect
     })
     .unset(['backgroundImage', 'copyright', 'contact.email', 'contact.phone', 'contact.body'])
     .commit();
 
-  console.log('Updated About page content (member images unchanged if already set).');
+  console.log('Updated About page content (existing member images preserved).');
 } else {
-  await client.create(document);
+  await client.create({
+    ...document,
+    teamMembers
+  });
   console.log('Created About page with default content.');
 }

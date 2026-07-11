@@ -48,6 +48,58 @@ export function nextFrame(): Promise<void> {
   });
 }
 
+export function waitAllTransitions(
+  element: HTMLElement,
+  options: {
+    timeoutMs?: number;
+    slideClass?: string;
+    propertyNames?: string[];
+  } = {}
+): Promise<void> {
+  const {
+    timeoutMs = 800,
+    slideClass = 'page-exhibitions-thumbnail-slide',
+    propertyNames = ['transform', 'width']
+  } = options;
+
+  return new Promise((resolve) => {
+    let done = false;
+    const pending = new Set(propertyNames);
+
+    const finish = () => {
+      if (done) {
+        return;
+      }
+      done = true;
+      element.removeEventListener('transitionend', onEnd);
+      resolve();
+    };
+
+    const onEnd = (event: TransitionEvent) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement) || target !== element) {
+        return;
+      }
+
+      if (!target.classList.contains(slideClass)) {
+        return;
+      }
+
+      if (!pending.has(event.propertyName)) {
+        return;
+      }
+
+      pending.delete(event.propertyName);
+      if (pending.size === 0) {
+        finish();
+      }
+    };
+
+    element.addEventListener('transitionend', onEnd);
+    window.setTimeout(finish, timeoutMs);
+  });
+}
+
 export function waitTransition(
   element: HTMLElement,
   options: {
