@@ -66,10 +66,6 @@ body.site-menu-open {
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.55);
 }
 
-.site-header-pill:focus-visible {
-  outline: none;
-}
-
 body.site-menu-open .site-header-pill {
   background: transparent;
 }
@@ -162,23 +158,24 @@ body.site-menu-open .site-header-pill:hover {
   pointer-events: none;
   background: transparent;
   backdrop-filter: blur(0px);
-  opacity: 0;
+  -webkit-backdrop-filter: blur(0px);
+  /* Avoid opacity on this layer — iOS Safari drops backdrop-filter when opacity is animated. */
   transition:
     backdrop-filter var(--transition-time) var(--transition-effect),
     -webkit-backdrop-filter var(--transition-time) var(--transition-effect),
-    background-color var(--transition-time) var(--transition-effect),
-    opacity var(--transition-time) var(--transition-effect);
+    background-color var(--transition-time) var(--transition-effect);
 }
 
 .site-menu-container.is-open .site-menu-background {
   background: var(--menu-layer-background);
   backdrop-filter: blur(var(--menu-backdrop-blur));
-  opacity: 1;
+  -webkit-backdrop-filter: blur(var(--menu-backdrop-blur));
 }
 
 @media (prefers-reduced-motion: reduce) {
   .site-menu-container.is-open .site-menu-background {
     backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 }
 
@@ -341,6 +338,7 @@ body.site-menu-open .site-header-pill:hover {
 
   .site-header-logo img {
     max-width: 54px;
+    opacity: 0.7;
   }
 
   .site-menu {
