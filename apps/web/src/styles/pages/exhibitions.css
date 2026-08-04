@@ -1114,7 +1114,7 @@ html[data-exhibitions-view='full'] .page-exhibitions,
     max-width: none;
   }
   
-  .page-exhibition-close::before {
+  /* .page-exhibition-close::before {
     content: '';
     position: absolute;
     top: 50%;
@@ -1124,7 +1124,7 @@ html[data-exhibitions-view='full'] .page-exhibitions,
     height: calc(100% - 5px);
     border-radius: 3px;
     box-shadow: inset 0 0 0 0.3px var(--foreground-color);
-  }
+  } */
 
   .page-exhibition-meta {
     display: flex;

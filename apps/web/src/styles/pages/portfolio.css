@@ -1006,7 +1006,7 @@
     max-width: none;
   }
 
-  .page-portfolio-detail-close::before {
+  /* .page-portfolio-detail-close::before {
     content: '';
     position: absolute;
     top: 50%;
@@ -1016,7 +1016,7 @@
     height: calc(100% - 5px);
     border-radius: 3px;
     box-shadow: inset 0 0 0 0.3px var(--foreground-color);
-  }
+  } */
 
   .page-portfolio-detail-media-item {
     height: auto;
