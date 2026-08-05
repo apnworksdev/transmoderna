@@ -40,6 +40,8 @@ body.site-menu-open {
   text-transform: uppercase;
   white-space: nowrap;
   transition: background-color var(--transition-time) var(--transition-effect);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(var(--menu-backdrop-blur));
 }
 
 .site-header-pill:hover {

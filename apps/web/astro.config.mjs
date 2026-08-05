@@ -24,6 +24,12 @@ export default defineConfig({
   vite: {
     server: {
       allowedHosts: ['.ngrok-free.app', '.ngrok-free.dev']
+    },
+    // Lightning CSS drops unprefixed `backdrop-filter` when `-webkit-backdrop-filter`
+    // is also present (and can minify `blur(0px)` to invalid `blur()`).
+    // https://github.com/parcel-bundler/lightningcss/issues/695
+    build: {
+      cssMinify: 'esbuild'
     }
   }
 });

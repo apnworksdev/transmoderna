@@ -69,9 +69,11 @@
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
+  backdrop-filter: blur(var(--menu-backdrop-blur));
+  -webkit-backdrop-filter: blur(var(--menu-backdrop-blur));
 }
 
-.html-video-mute-toggle::before {
+/* .html-video-mute-toggle::before {
   content: '';
   position: absolute;
   top: 3px;
@@ -80,7 +82,7 @@
   height: calc(100% - 6px);
   border-radius: 4px;
   border: solid 0.25px var(--foreground-color);
-}
+} */
 
 .work-media-footnote {
   padding-top: 10px;
