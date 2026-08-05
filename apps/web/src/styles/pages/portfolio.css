@@ -404,6 +404,18 @@
   transform: translate(calc(-50% + var(--portfolio-x-4)), -50%);
 }
 
+.page-portfolio-slide[data-portfolio-slot='enter-right'],
+.page-portfolio-slide[data-portfolio-slot='enter-right-2'],
+.page-portfolio-slide[data-portfolio-slot='enter-right-3'],
+.page-portfolio-slide[data-portfolio-slot='enter-right-4'],
+.page-portfolio-slide[data-portfolio-slot='enter-left'],
+.page-portfolio-slide[data-portfolio-slot='enter-left-2'],
+.page-portfolio-slide[data-portfolio-slot='enter-left-3'],
+.page-portfolio-slide[data-portfolio-slot='enter-left-4'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .page-portfolio-swiper.is-resetting .page-portfolio-slide,
 .page-portfolio-swiper.is-resetting .page-portfolio-slide-inner,
 .page-portfolio-swiper.is-resetting .page-portfolio-slide-figure,
