@@ -1,10 +1,11 @@
 ---
 interface Props {
   src?: string;
+  poster?: string;
   title: string;
 }
 
-const { src, title } = Astro.props;
+const { src, poster, title } = Astro.props;
 ---
 
 {
@@ -14,8 +15,9 @@ const { src, title } = Astro.props;
         class="page-portfolio-video-media"
         data-portfolio-video-media
         title={title}
+        poster={poster}
         playsinline
-        preload="auto"
+        preload="metadata"
         disablepictureinpicture
         disableRemotePlayback
       >

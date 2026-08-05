@@ -21,11 +21,28 @@ export const workMediaType = defineType({
         })
     }),
     defineField({
+      name: 'poster',
+      title: 'Video poster',
+      type: 'image',
+      options: { hotspot: true },
+      description:
+        'Shown before the video plays (especially important in Safari). Recommended when a Vimeo URL is set.',
+      hidden: ({ parent }) => !parent?.url?.trim(),
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Alt text',
+          type: 'string'
+        })
+      ]
+    }),
+    defineField({
       name: 'image',
       title: 'Image',
       type: 'image',
       options: { hotspot: true },
       description: 'Used when no Vimeo URL is set.',
+      hidden: ({ parent }) => Boolean(parent?.url?.trim()),
       fields: [
         defineField({
           name: 'alt',
@@ -50,12 +67,13 @@ export const workMediaType = defineType({
       return 'Add a Vimeo URL or an image';
     }),
   preview: {
-    select: { url: 'url', footnote: 'footnote', media: 'image' },
-    prepare({ url, footnote, media }) {
+    select: { url: 'url', footnote: 'footnote', image: 'image', poster: 'poster' },
+    prepare({ url, footnote, image, poster }) {
+      const hasUrl = typeof url === 'string' && url.trim();
       return {
-        title: typeof url === 'string' && url.trim() ? url : media ? 'Image' : 'Work media',
+        title: hasUrl ? url : image ? 'Image' : 'Work media',
         subtitle: typeof footnote === 'string' ? footnote : undefined,
-        media
+        media: hasUrl ? poster || image : image
       };
     }
   }

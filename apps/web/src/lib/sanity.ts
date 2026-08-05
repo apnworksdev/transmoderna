@@ -35,6 +35,8 @@ export type VimeoVideo = {
 export type WorkMedia = {
   url?: string;
   videoSrc?: string;
+  videoPoster?: string;
+  poster?: SanityImageWithAlt;
   image?: SanityImageWithAlt;
   footnote?: string;
 };
@@ -231,7 +233,7 @@ export function imageAlt(
   return typeof alt === 'string' && alt.trim() ? alt.trim() : fallback;
 }
 
-export { resolveVimeoVideoSrc, vimeoEmbedUrl } from './vimeo';
+export { resolveVimeoVideo, resolveVimeoVideoSrc, vimeoEmbedUrl } from './vimeo';
 
 const readToken = import.meta.env.SANITY_API_READ_TOKEN?.trim();
 
@@ -315,6 +317,7 @@ const workDocumentProjection = `{
   media[]{
     url,
     footnote,
+    poster { ..., alt, asset->{ url, mimeType } },
     image { ..., alt, asset->{ url, mimeType } }
   },
   sortOrder
@@ -590,6 +593,7 @@ const portfolioItemProjection = `{
   media[]{
     url,
     footnote,
+    poster { ..., alt, asset->{ url, mimeType } },
     image { ..., alt, asset->{ url, mimeType } }
   },
   sortOrder
@@ -598,7 +602,7 @@ const portfolioItemProjection = `{
 async function enrichPortfolioItems(
   items: PortfolioItemDocument[]
 ): Promise<PortfolioItemDocument[]> {
-  const { resolveVimeoVideoSrc } = await import('./vimeo');
+  const { resolveVimeoVideo } = await import('./vimeo');
 
   return Promise.all(
     items.map(async (item) => {
@@ -613,8 +617,10 @@ async function enrichPortfolioItems(
             return entry;
           }
 
-          const videoSrc = await resolveVimeoVideoSrc(url).catch(() => undefined);
-          return videoSrc ? { ...entry, videoSrc } : entry;
+          const resolved = await resolveVimeoVideo(url).catch(() => undefined);
+          return resolved
+            ? { ...entry, videoSrc: resolved.src, videoPoster: resolved.poster }
+            : entry;
         })
       );
 

@@ -6,11 +6,19 @@ type VimeoProgressiveFile = {
 };
 
 type VimeoConfigResponse = {
+  video?: {
+    thumbs?: Record<string, string | undefined>;
+  };
   request?: {
     files?: {
       progressive?: VimeoProgressiveFile[];
     };
   };
+};
+
+export type ResolvedVimeoVideo = {
+  src: string;
+  poster?: string;
 };
 
 export function vimeoVideoId(url: string | undefined): string | undefined {
@@ -60,7 +68,31 @@ export function vimeoEmbedUrl(url: string | undefined): string | undefined {
   return id ? `https://player.vimeo.com/video/${id}` : undefined;
 }
 
-export async function resolveVimeoVideoSrc(url: string | undefined): Promise<string | undefined> {
+function pickVimeoPoster(thumbs: Record<string, string | undefined> | undefined): string | undefined {
+  if (!thumbs) {
+    return undefined;
+  }
+
+  const sized = Object.entries(thumbs)
+    .filter(([key, value]) => key !== 'base' && Boolean(value) && /^\d+$/.test(key))
+    .sort((a, b) => Number(b[0]) - Number(a[0]));
+
+  if (sized[0]?.[1]) {
+    return sized[0][1];
+  }
+
+  const base = thumbs.base?.trim();
+  if (!base) {
+    return undefined;
+  }
+
+  // Vimeo base thumbs usually accept a size suffix, e.g. `_1280`.
+  return base.includes('_') ? base : `${base}_1280`;
+}
+
+export async function resolveVimeoVideo(
+  url: string | undefined
+): Promise<ResolvedVimeoVideo | undefined> {
   const id = vimeoVideoId(url);
   if (!id) {
     return undefined;
@@ -86,8 +118,20 @@ export async function resolveVimeoVideoSrc(url: string | undefined): Promise<str
     }
 
     const best = [...progressive].sort((a, b) => (b.width ?? 0) - (a.width ?? 0))[0];
-    return best?.url;
+    if (!best?.url) {
+      return undefined;
+    }
+
+    return {
+      src: best.url,
+      poster: pickVimeoPoster(data.video?.thumbs)
+    };
   } catch {
     return undefined;
   }
+}
+
+export async function resolveVimeoVideoSrc(url: string | undefined): Promise<string | undefined> {
+  const resolved = await resolveVimeoVideo(url);
+  return resolved?.src;
 }

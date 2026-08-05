@@ -1,5 +1,6 @@
 ---
 import type { WorkMedia } from '../lib/sanity';
+import { urlForSanityImage } from '../lib/sanity';
 import PortfolioVideoPlayer from './PortfolioVideoPlayer.astro';
 import SanityImage from './SanityImage.astro';
 
@@ -13,13 +14,15 @@ const vimeoUrl = media?.url?.trim();
 const videoSrc = media?.videoSrc;
 const showVideo = Boolean(vimeoUrl && videoSrc);
 const showImage = Boolean(media?.image && (!vimeoUrl || !videoSrc));
+const poster =
+  urlForSanityImage(media?.poster, { width: 2400 }) ?? media?.videoPoster;
 ---
 
 {
   showVideo || showImage ? (
     <section class="page-portfolio-detail-media-item">
       {showVideo ? (
-        <PortfolioVideoPlayer src={videoSrc} title={title} />
+        <PortfolioVideoPlayer src={videoSrc} poster={poster} title={title} />
       ) : (
         <figure class="page-portfolio-detail-image">
           <SanityImage image={media?.image} altFallback={title} width={2400} loading="lazy" />
