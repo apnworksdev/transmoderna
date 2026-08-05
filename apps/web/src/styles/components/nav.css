@@ -33,7 +33,7 @@ body.site-menu-open {
   min-width: 100px;
   background: rgba(76, 76, 76, 0.35);
   font-weight: var(--font-weight-light);
-  box-shadow: inset 0 0 0 0.3px var(--foreground-color);
+  box-shadow: inset 0 0 0 0.5px var(--foreground-color);
   border-radius: var(--border-radius);
   font-size: var(--font-size-xs);
   line-height: var(--line-height-xs);

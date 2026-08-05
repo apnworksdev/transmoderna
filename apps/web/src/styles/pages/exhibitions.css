@@ -1107,7 +1107,7 @@ html[data-exhibitions-view='full'] .page-exhibitions,
   .page-exhibition-close {
     background: rgba(76, 76, 76, 0.35);
     font-weight: var(--font-weight-light);
-    box-shadow: inset 0 0 0 0.3px var(--foreground-color);
+    box-shadow: inset 0 0 0 0.5px var(--foreground-color);
     border: none;
     position: relative;
     width: 100%;
@@ -1123,7 +1123,7 @@ html[data-exhibitions-view='full'] .page-exhibitions,
     width: calc(100% - 5px);
     height: calc(100% - 5px);
     border-radius: 3px;
-    box-shadow: inset 0 0 0 0.3px var(--foreground-color);
+    box-shadow: inset 0 0 0 0.5px var(--foreground-color);
   } */
 
   .page-exhibition-meta {

@@ -278,7 +278,7 @@
   font-size: var(--font-size-xs);
   line-height: var(--line-height-xs);
   background: rgba(255, 255, 255, 0.35);
-  border: 0.3px solid rgba(255, 255, 255, 1);
+  border: 0.5px solid rgba(255, 255, 255, 1);
   text-transform: uppercase;
   cursor: pointer;
   transition:

@@ -38,7 +38,7 @@
   --podcast-bar-column-gap: 20px;
   --podcast-bar-border-width: 0.25px;
   --podcast-bar-radius: 10px;
-  --podcast-bar-inset-shadow: inset 0 0 0 0.3px rgba(255, 255, 255, 1);
+  --podcast-bar-inset-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 1);
   --podcast-bar-inactive-opacity: 0.72;
   --podcast-bar-bg-overlay: rgba(0, 0, 0, 0.4);
   --podcast-bar-bg-blur: 8px;
