@@ -11,6 +11,7 @@ import { initExhibitionsThumbnailSwiper } from './exhibitions-thumbnail-swiper.t
 let swiperCleanup: (() => void) | null = null;
 let currentViewMode: ExhibitionsViewMode | null = null;
 let isViewTransitioning = false;
+let scrollLockCleanup: (() => void) | null = null;
 
 function getStoredExhibitionsViewMode(): ExhibitionsViewMode {
   try {
@@ -35,6 +36,51 @@ function setStoredViewMode(mode: ExhibitionsViewMode): void {
 function syncViewModeAttributes(mode: ExhibitionsViewMode, page: HTMLElement): void {
   page.dataset.exhibitionsView = mode;
   document.documentElement.dataset.exhibitionsView = mode;
+}
+
+function lockExhibitionsPageScroll(): void {
+  if (scrollLockCleanup) {
+    return;
+  }
+
+  const isInsideScrollableChrome = (target: EventTarget | null) => {
+    if (!(target instanceof Element)) {
+      return false;
+    }
+
+    return Boolean(
+      target.closest('[data-site-menu]') ||
+        target.closest('.site-menu-container.is-open')
+    );
+  };
+
+  const onWheel = (event: WheelEvent) => {
+    if (isInsideScrollableChrome(event.target)) {
+      return;
+    }
+    event.preventDefault();
+  };
+
+  const onTouchMove = (event: TouchEvent) => {
+    if (isInsideScrollableChrome(event.target)) {
+      return;
+    }
+    event.preventDefault();
+  };
+
+  document.addEventListener('wheel', onWheel, { passive: false });
+  document.addEventListener('touchmove', onTouchMove, { passive: false });
+
+  scrollLockCleanup = () => {
+    document.removeEventListener('wheel', onWheel);
+    document.removeEventListener('touchmove', onTouchMove);
+    scrollLockCleanup = null;
+  };
+}
+
+function unlockExhibitionsPageScroll(): void {
+  scrollLockCleanup?.();
+  scrollLockCleanup = null;
 }
 
 function updateToggleButtons(mode: ExhibitionsViewMode, root: ParentNode): void {
@@ -150,13 +196,17 @@ async function setViewMode(
 
 export function destroyExhibitionsView(): void {
   destroySwiper();
+  unlockExhibitionsPageScroll();
   currentViewMode = null;
   isViewTransitioning = false;
 
+  delete document.documentElement.dataset.exhibitionsView;
+  document.documentElement.classList.remove('exhibitions-list-pending');
+
   document.querySelectorAll<HTMLElement>('[data-exhibitions-page]').forEach((page) => {
     delete page.dataset.exhibitionsViewInitialized;
+    delete page.dataset.exhibitionsView;
     page.querySelector('[data-exhibitions-full]')?.classList.remove('is-ready', 'is-hiding');
-    document.documentElement.classList.add('exhibitions-list-pending');
   });
 }
 
@@ -167,6 +217,7 @@ export function initExhibitionsView(root: ParentNode = document): void {
   }
 
   page.dataset.exhibitionsViewInitialized = 'true';
+  lockExhibitionsPageScroll();
 
   const initialMode = getStoredExhibitionsViewMode();
   void setViewMode(page, initialMode, root, { transition: false });

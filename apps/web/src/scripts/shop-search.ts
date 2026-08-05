@@ -14,6 +14,8 @@ function getSearchToggle(): HTMLButtonElement | null {
   return document.querySelector<HTMLButtonElement>('[data-shop-search-toggle]');
 }
 
+const SEARCH_IDLE_CLOSE_MS = 8000;
+
 function setSearchOpen(open: boolean): void {
   const bottom = getBottomBar();
   const toggle = getSearchToggle();
@@ -30,10 +32,6 @@ function setSearchOpen(open: boolean): void {
       input.setSelectionRange(input.value.length, input.value.length);
     }
   }
-}
-
-function shouldKeepSearchOpen(query: string): boolean {
-  return query.trim().length > 0;
 }
 
 function syncUrlQuery(query: string): void {
@@ -79,10 +77,6 @@ function filterProducts(query: string): void {
   }
 
   syncUrlQuery(query);
-
-  if (shouldKeepSearchOpen(query)) {
-    setSearchOpen(true);
-  }
 }
 
 async function navigateToShopSearch(query: string): Promise<void> {
@@ -116,39 +110,65 @@ export function initShopSearch(): (() => void) | null {
 
   const page = root.dataset.shopPage ?? '';
   const initialFromUrl = root.dataset.initialSearch ?? '';
+  let idleCloseTimeout: number | null = null;
+
+  const clearIdleClose = () => {
+    if (idleCloseTimeout !== null) {
+      window.clearTimeout(idleCloseTimeout);
+      idleCloseTimeout = null;
+    }
+  };
+
+  const scheduleIdleClose = () => {
+    clearIdleClose();
+    idleCloseTimeout = window.setTimeout(() => {
+      idleCloseTimeout = null;
+      setSearchOpen(false);
+      input.blur();
+    }, SEARCH_IDLE_CLOSE_MS);
+  };
+
+  const closeSearch = () => {
+    clearIdleClose();
+    setSearchOpen(false);
+  };
 
   if (initialFromUrl && input.value !== initialFromUrl) {
     input.value = initialFromUrl;
   }
 
   if (page === 'index') {
-    if (shouldKeepSearchOpen(input.value)) {
-      setSearchOpen(true);
-    }
     filterProducts(input.value);
   }
 
   const onToggle = () => {
     const isOpen = bottom.classList.contains('is-search-open');
-    if (isOpen && !shouldKeepSearchOpen(input.value)) {
-      setSearchOpen(false);
+    if (isOpen) {
+      closeSearch();
       return;
     }
     setSearchOpen(true);
+    scheduleIdleClose();
   };
 
   const onInput = () => {
-    if (page === 'index') {
-      if (!bottom.classList.contains('is-search-open')) {
-        setSearchOpen(true);
-      }
-      filterProducts(input.value);
-      return;
-    }
-
     if (!bottom.classList.contains('is-search-open')) {
       setSearchOpen(true);
     }
+
+    if (page === 'index') {
+      filterProducts(input.value);
+    }
+
+    scheduleIdleClose();
+  };
+
+  const onBlur = () => {
+    // Defer so a click on the toggle/other control can run first.
+    window.setTimeout(() => {
+      if (document.activeElement === input) return;
+      closeSearch();
+    }, 0);
   };
 
   const onKeyDown = (event: KeyboardEvent) => {
@@ -156,28 +176,38 @@ export function initShopSearch(): (() => void) | null {
       if (page === 'index') {
         input.value = '';
         filterProducts('');
-        setSearchOpen(false);
+        closeSearch();
         return;
       }
 
-      setSearchOpen(false);
+      closeSearch();
       return;
     }
 
     if (page !== 'index' && event.key === 'Enter') {
       event.preventDefault();
+      clearIdleClose();
       void navigateToShopSearch(input.value);
+      return;
+    }
+
+    // Non-input keys (arrows, etc.) still count as activity while focused.
+    if (bottom.classList.contains('is-search-open')) {
+      scheduleIdleClose();
     }
   };
 
   toggle.addEventListener('click', onToggle);
   input.addEventListener('input', onInput);
   input.addEventListener('keydown', onKeyDown);
+  input.addEventListener('blur', onBlur);
 
   cleanup = () => {
+    clearIdleClose();
     toggle.removeEventListener('click', onToggle);
     input.removeEventListener('input', onInput);
     input.removeEventListener('keydown', onKeyDown);
+    input.removeEventListener('blur', onBlur);
   };
 
   return cleanup;

@@ -216,11 +216,15 @@
     left: -15px;
     padding: 0 15px;
     gap: 10px;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 15px;
+    -webkit-overflow-scrolling: touch;
   }
 
   .page-work-list-item-media-list li {
     width: calc(100vw - 30px);
     flex-shrink: 0;
+    scroll-snap-align: start;
   }
 
   .work-media-footnote {

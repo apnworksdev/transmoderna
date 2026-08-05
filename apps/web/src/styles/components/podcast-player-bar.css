@@ -321,7 +321,7 @@
 
   /* Single page player — full card with icon + progress */
   .podcast-player-bar--detail {
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: 60px minmax(0, 1fr) auto;
     grid-template-rows: auto auto auto auto;
     grid-template-areas:
       'number copy date'
