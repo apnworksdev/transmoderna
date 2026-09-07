@@ -6,7 +6,7 @@
 |-------|------|
 | **Sanity Connect** | Syncs products, variants, collections from Shopify into Sanity |
 | **Sanity `product` docs** | Editorial description (`body`) + read-only `store` object |
-| **`/shop`** | Product grid (curated in Shop singleton, or all products) |
+| **`/shop`** | Product grid (only products listed on the Shop singleton) |
 | **`/shop/[handle]`** | Product detail + add to cart |
 | **Storefront API** | Live variant GIDs via `/api/product-variants` before checkout |
 
@@ -39,7 +39,7 @@ SANITY_API_WRITE_TOKEN=          # for custom sync webhook
 
 ## 3. Studio
 
-1. Open **Shop** singleton — add intro copy and optional featured product order.
+1. Open **Shop** singleton — add the products that should appear on the site (order is the grid order). Only those products are shown and loaded.
 2. Edit each **Product** — add portable text `body`; do not edit `store.*` (synced).
 3. Create **Home** / content as needed.
 

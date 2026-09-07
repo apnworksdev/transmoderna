@@ -62,20 +62,22 @@ Astro.response.headers.set(
     {
       products.length === 0 ? (
         <div class="page-shop-token-notice">
-          <p>
-            No products were returned from Sanity. This project’s dataset is not readable without an
-            API token (anonymous queries return 0 documents).
-          </p>
           {!hasReadToken ? (
-            <p>
-              Add a <strong>Viewer</strong> token to <code>apps/web/.env</code> as{' '}
-              <code>SANITY_API_READ_TOKEN=sk…</code> (no quotes), save the file, then restart{' '}
-              <code>npm run dev:web</code>.
-            </p>
+            <>
+              <p>
+                No products were returned from Sanity. This project’s dataset is not readable without
+                an API token (anonymous queries return 0 documents).
+              </p>
+              <p>
+                Add a <strong>Viewer</strong> token to <code>apps/web/.env</code> as{' '}
+                <code>SANITY_API_READ_TOKEN=sk…</code> (no quotes), save the file, then restart{' '}
+                <code>npm run dev:web</code>.
+              </p>
+            </>
           ) : (
             <p>
-              <code>SANITY_API_READ_TOKEN</code> is set — restart <code>npm run dev:web</code> if
-              you just added it. For production, add the same variable in Netlify env settings.
+              No products selected. In Sanity, open <strong>Pages → Shop</strong> and add the
+              products you want to show.
             </p>
           )}
         </div>

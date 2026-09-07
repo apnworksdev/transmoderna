@@ -20,6 +20,13 @@ body.page-index {
   transition: filter var(--duration-fast) var(--ease);
 }
 
+.page-index-video-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  cursor: pointer;
+}
+
 .page-index-video iframe,
 .page-index-video video {
   width: 100%;

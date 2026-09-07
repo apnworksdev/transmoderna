@@ -16,12 +16,23 @@ export const shopType = defineType({
     }),
     defineField({
       name: 'products',
-      title: 'Featured products',
+      title: 'Products',
       type: 'array',
-      of: [{ type: 'reference', to: [{ type: 'product' }] }],
+      of: [
+        {
+          type: 'reference',
+          to: [{ type: 'product' }],
+          options: {
+            disableNew: true,
+            filter:
+              'store.isDeleted != true && (!defined(store.status) || store.status == "active")'
+          }
+        }
+      ],
       options: { sortable: true },
       description:
-        'Optional curated order. Leave empty to show all synced products alphabetically.'
+        'Only these products are shown and loaded on the site, in this order. Sync from Shopify first, then add each product you want live.',
+      validation: (Rule) => Rule.unique()
     })
   ],
   preview: {

@@ -11,12 +11,16 @@ interface Props {
 }
 
 const { logo, menuLinks, footerLogo, deferChromeReveal = false } = Astro.props;
+// Shop-only launch: used by the commented-out menu overlay.
+void menuLinks;
+void footerLogo;
 ---
 
 <header
   class="site-header site-chrome"
   data-site-chrome={deferChromeReveal ? "" : undefined}
 >
+  {/* Shop-only launch: restore this menu button (and the overlay below) when the rest of the site goes live. Remove the spacer span at the same time so the header grid stays menu | logo | shop.
   <button
     type="button"
     class="site-header-menu-toggle site-header-pill"
@@ -33,6 +37,8 @@ const { logo, menuLinks, footerLogo, deferChromeReveal = false } = Astro.props;
       >Menu</span
     >
   </button>
+  */}
+  <span class="site-header-menu-toggle" aria-hidden="true"></span>
 
   <a class="site-header-logo" href="/" aria-label="Transmoderna home">
     {
@@ -53,6 +59,7 @@ const { logo, menuLinks, footerLogo, deferChromeReveal = false } = Astro.props;
   <a class="site-header-shop site-header-pill" href="/shop">Shop</a>
 </header>
 
+{/* Shop-only launch: restore with the menu button above.
 <div
   id="site-menu-container"
   class="site-menu-container"
@@ -94,3 +101,4 @@ const { logo, menuLinks, footerLogo, deferChromeReveal = false } = Astro.props;
     }
   </footer>
 </div>
+*/}

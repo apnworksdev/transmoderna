@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { getShopProductByHandle } from '../../lib/shop';
 import {
   fetchProductVariantsByHandle,
   isStorefrontConfigured
@@ -12,6 +13,14 @@ export const GET: APIRoute = async ({ url }) => {
     return new Response(
       JSON.stringify({ success: false, message: 'Missing handle query parameter' }),
       { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const listed = await getShopProductByHandle(handle);
+  if (!listed) {
+    return new Response(
+      JSON.stringify({ success: false, message: 'Product not found' }),
+      { status: 404, headers: { 'Content-Type': 'application/json' } }
     );
   }
 
