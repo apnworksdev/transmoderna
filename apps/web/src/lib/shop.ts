@@ -209,6 +209,68 @@ export function productDisplayPrice(product: ShopProduct): number | undefined {
   return variant?.store?.price;
 }
 
+/**
+ * Map Sanity-synced Shopify data into the Storefront-shaped payload used by the buy UI.
+ * Used when the live Storefront fetch returns nothing (misconfigured env, market, etc.).
+ */
+export function storefrontDataFromSanityProduct(product: ShopProduct): {
+  variants: Array<{
+    id: string;
+    title: string;
+    availableForSale: boolean;
+    price?: { amount: string; currencyCode: string };
+    selectedOptions?: Array<{ name: string; value: string }>;
+  }>;
+  options: Array<{ name: string; values: string[] }>;
+} {
+  const optionDefs = (product.store?.options ?? [])
+    .map((option) => ({
+      name: option?.name?.trim() ?? '',
+      values: (option?.values ?? []).filter(
+        (value): value is string => typeof value === 'string' && value.trim().length > 0
+      )
+    }))
+    .filter((option) => option.name.length > 0 && option.values.length > 0);
+
+  const variants = (product.store?.variants ?? [])
+    .map((variant) => {
+      if (!variant.store || variant.store.isDeleted) {
+        return null;
+      }
+
+      const gid = variant.store.gid?.trim();
+      if (!gid) {
+        return null;
+      }
+
+      const optionValues = [
+        variant.store.option1,
+        variant.store.option2,
+        variant.store.option3
+      ];
+      const selectedOptions = optionDefs.flatMap((option, index) => {
+        const value = optionValues[index]?.trim();
+        return value ? [{ name: option.name, value }] : [];
+      });
+
+      const price =
+        typeof variant.store.price === 'number'
+          ? { amount: String(variant.store.price), currencyCode: 'EUR' }
+          : undefined;
+
+      return {
+        id: gid,
+        title: variantTitle(variant),
+        availableForSale: variantAvailable(variant),
+        price,
+        selectedOptions
+      };
+    })
+    .filter((variant): variant is NonNullable<typeof variant> => variant != null);
+
+  return { variants, options: optionDefs };
+}
+
 export function variantTitle(variant: ShopVariant): string {
   const t = variant.title ?? variant.store?.title ?? variant.store?.option1;
   return typeof t === 'string' && t.trim() ? t.trim() : 'Variant';

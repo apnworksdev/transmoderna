@@ -1,6 +1,7 @@
 ---
 import PortableTextHtml from '../PortableTextHtml.astro';
 import type { ShopProduct } from '../../lib/shop';
+import { productDisplayPrice } from '../../lib/shop';
 import { formatPrice, parsePriceAmount } from '../../lib/shop-format';
 import {
   getDefaultVariant,
@@ -24,16 +25,16 @@ const options = resolveProductOptions(optionsProp, variants);
 const shopifyEnabled = isStorefrontConfigured();
 const defaultVariant = getDefaultVariant(variants);
 const initialSelections = getInitialOptionSelections(options, variants, defaultVariant);
-const defaultPrice = parsePriceAmount(defaultVariant?.price?.amount);
 const defaultCurrency = defaultVariant?.price?.currencyCode ?? 'EUR';
+const variantPrice = parsePriceAmount(defaultVariant?.price?.amount);
+const sanityPrice = productDisplayPrice(product);
+const defaultPrice = typeof variantPrice === 'number' ? variantPrice : sanityPrice;
 const allSoldOut = variants.length > 0 && variants.every((variant) => !variant.availableForSale);
 const addLabel = !shopifyEnabled
   ? 'Shopify not configured'
-  : variants.length === 0
-    ? 'Unavailable'
-    : allSoldOut
-      ? 'Sold out'
-      : 'Add to cart';
+  : allSoldOut || variants.length === 0
+    ? 'Sold out'
+    : 'Add to cart';
 const variantsPayload = JSON.stringify(
   variants.map((variant) => ({
     id: variant.id,
@@ -108,7 +109,12 @@ const variantsPayload = JSON.stringify(
         data-add-to-cart
         data-qty="1"
         data-default-label="Add to cart"
-        disabled={!shopifyEnabled || variants.length === 0 || !defaultVariant?.availableForSale}
+        disabled={
+          !shopifyEnabled ||
+          variants.length === 0 ||
+          allSoldOut ||
+          !defaultVariant?.availableForSale
+        }
       >
         {addLabel}
       </button>
@@ -156,7 +162,5 @@ const variantsPayload = JSON.stringify(
         </div>
       ) : null
     }
-  
-    <a class="page-shop-shipping-link site-header-pill" href="#">Shipping</a>
   </div>
 </div>

@@ -80,11 +80,7 @@ function addButtonLabel(
 ): string {
   const defaultLabel = addBtn.dataset.defaultLabel ?? 'Add to cart';
 
-  if (variants.length === 0) {
-    return 'Unavailable';
-  }
-
-  if (variants.every((variant) => !variant.availableForSale)) {
+  if (variants.length === 0 || variants.every((variant) => !variant.availableForSale)) {
     return 'Sold out';
   }
 

@@ -4,7 +4,12 @@ import ProductBuy from '../../components/shop/ProductBuy.astro';
 import ShopBackground from '../../components/shop/ShopBackground.astro';
 import ShopBottomBar from '../../components/shop/ShopBottomBar.astro';
 import ShopProductToolbar from '../../components/shop/ShopProductToolbar.astro';
-import { getShopProductByHandle, productHandle, productImageUrl } from '../../lib/shop';
+import {
+  getShopProductByHandle,
+  productHandle,
+  productImageUrl,
+  storefrontDataFromSanityProduct
+} from '../../lib/shop';
 import { fetchProductStorefrontDataByHandle } from '../../lib/shopify-storefront';
 import '../../styles/pages/shop.css';
 
@@ -24,7 +29,11 @@ const title = product.store?.title ?? 'Product';
 const slug = productHandle(product) ?? handle;
 const fallbackImage = productImageUrl(product);
 const storefront = await fetchProductStorefrontDataByHandle(slug);
-const variants = storefront?.variants ?? [];
+const sanityStorefront = storefrontDataFromSanityProduct(product);
+const variants =
+  storefront?.variants?.length ? storefront.variants : sanityStorefront.variants;
+const options =
+  storefront?.options?.length ? storefront.options : sanityStorefront.options;
 const images =
   storefront?.images.length
     ? storefront.images
@@ -92,7 +101,7 @@ Astro.response.headers.set(
       </div>
 
       <div class="page-shop-product-panel">
-        <ProductBuy product={product} variants={variants} options={storefront?.options} />
+        <ProductBuy product={product} variants={variants} options={options} />
       </div>
 
       <aside class="page-shop-product-sidebar" aria-label="Product images">
