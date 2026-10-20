@@ -6,7 +6,7 @@ Netlify runs the build from the **repository root** (`/opt/build/repo`) even whe
 
 Or rely on [`apps/web/netlify.toml`](../apps/web/netlify.toml) / [`apps/studio/netlify.toml`](../apps/studio/netlify.toml).
 
-## 1) Web (`www.transmoderna.com` or your domain)
+## 1) Web (`www.transmoderna.net` or your domain)
 
 | Setting | Value |
 |---------|--------|
@@ -36,11 +36,19 @@ Or rely on [`apps/web/netlify.toml`](../apps/web/netlify.toml) / [`apps/studio/n
 
 **Sanity Connect custom sync URL:** `https://<your-domain>/api/shopify-sync`
 
+### Domains and shop redirect
+
+1. In Netlify **Domain management**, add `www.transmoderna.net`, apex `transmoderna.net`, and `shop.transmoderna.net`.
+2. Set the primary domain to `www.transmoderna.net` (matches `site` in `apps/web/astro.config.mjs`).
+3. Have DNS for those hostnames pointed at this Netlify site.
+
+[`apps/web/netlify.toml`](../apps/web/netlify.toml) already 301-redirects `https://shop.transmoderna.net/*` (and `http://…`) → `https://www.transmoderna.net/shop/:splat` via Netlify domain-level redirects. That only works after the shop subdomain is both added in Netlify and pointed via DNS.
+
 ### Secrets scanning
 
 Netlify scans build output for secret-like values. Astro inlines `PUBLIC_*` vars (and server tokens into SSR function bundles), so the deploy can fail even when the build succeeds. [`apps/web/netlify.toml`](../apps/web/netlify.toml) sets `SECRETS_SCAN_OMIT_KEYS` for the env vars this app uses at build time. Do not commit real tokens — keep them in Netlify **Site settings → Environment variables** only.
 
-## 2) Studio (`studio.transmoderna.com` or subdomain)
+## 2) Studio (`studio.transmoderna.net` or subdomain)
 
 | Setting | Value |
 |---------|--------|

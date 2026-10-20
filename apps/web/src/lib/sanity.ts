@@ -61,6 +61,7 @@ export type WorkDocument = {
   _id: string;
   title?: string;
   year?: number;
+  displayYear?: string;
   description?: string;
   media?: WorkMedia[];
   sortOrder?: number;
@@ -123,6 +124,7 @@ export type ExhibitionDocument = {
   tags?: string[];
   location?: string;
   year?: number;
+  displayYear?: string;
   artists?: ArtistDocument[];
   content?: ExhibitionContentBlock[];
 };
@@ -140,6 +142,7 @@ export type PortfolioItemDocument = {
   slug?: { current?: string };
   subtitle?: string;
   year?: number;
+  displayYear?: string;
   thumbnailImage?: SanityImageWithAlt;
   media?: WorkMedia[];
   sortOrder?: number;
@@ -313,6 +316,7 @@ const workDocumentProjection = `{
   _id,
   title,
   year,
+  displayYear,
   description,
   media[]{
     url,
@@ -405,6 +409,7 @@ const exhibitionListProjection = `{
   tags,
   location,
   year,
+  displayYear,
   "artists": artists[]->{ _id, name, country }
 }`;
 
@@ -558,6 +563,7 @@ export async function getExhibitionBySlug(slug: string): Promise<ExhibitionDocum
       tags,
       location,
       year,
+      displayYear,
       "artists": artists[]->{ _id, name, country },
       ${exhibitionContentProjection}
     }`,
@@ -579,6 +585,7 @@ const portfolioItemListProjection = `{
   slug,
   subtitle,
   year,
+  displayYear,
   thumbnailImage { ..., alt, asset->{ url, mimeType } },
   sortOrder
 }`;
@@ -589,6 +596,7 @@ const portfolioItemProjection = `{
   slug,
   subtitle,
   year,
+  displayYear,
   thumbnailImage { ..., alt, asset->{ url, mimeType } },
   media[]{
     url,
@@ -726,6 +734,21 @@ export function formatPodcastDate(isoDate: string | null | undefined): string {
   }
 
   return `${day}.${month}.${year}`;
+}
+
+/** Prefer Display year when set; otherwise fall back to the numeric Year. */
+export function resolveDisplayYear(doc: {
+  year?: number | null;
+  displayYear?: string | null;
+}): string | undefined {
+  const label = doc.displayYear?.trim();
+  if (label) {
+    return label;
+  }
+  if (doc.year != null) {
+    return String(doc.year);
+  }
+  return undefined;
 }
 
 export function formatElapsedTime(totalSeconds: number): string {

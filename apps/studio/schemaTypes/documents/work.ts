@@ -20,6 +20,13 @@ export const workType = defineType({
       validation: (Rule) => Rule.required().integer().min(1900).max(2100)
     }),
     defineField({
+      name: 'displayYear',
+      title: 'Display year',
+      type: 'string',
+      description:
+        'Optional. Shown on the site instead of Year when set (e.g. 2021 – 2022). Leave empty to show the Year value.'
+    }),
+    defineField({
       name: 'description',
       title: 'Description',
       type: 'text',
@@ -49,9 +56,15 @@ export const workType = defineType({
     }
   ],
   preview: {
-    select: { title: 'title', subtitle: 'year' },
-    prepare({ title, subtitle }) {
-      return { title, subtitle: subtitle ? String(subtitle) : undefined };
+    select: { title: 'title', year: 'year', displayYear: 'displayYear' },
+    prepare({ title, year, displayYear }) {
+      const label =
+        typeof displayYear === 'string' && displayYear.trim()
+          ? displayYear.trim()
+          : year != null
+            ? String(year)
+            : undefined;
+      return { title, subtitle: label };
     }
   }
 });

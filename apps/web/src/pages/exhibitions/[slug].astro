@@ -7,6 +7,7 @@ import {
   getExhibitionsSingleBackgroundImage,
   getSiteHeader,
   imageAlt,
+  resolveDisplayYear,
   urlForSanityImage,
 } from "../../lib/sanity";
 import "../../styles/pages/exhibitions.css";
@@ -42,8 +43,9 @@ const pageTitle = exhibition.title
   : "Exhibition — Transmoderna";
 const exhibitionTags = exhibition.tags ?? [];
 const exhibitionArtists = exhibition.artists ?? [];
+const exhibitionYearLabel = resolveDisplayYear(exhibition);
 const hasMetaTags = exhibitionTags.length > 0;
-const hasMetaDetails = Boolean(exhibition.location) || exhibition.year != null;
+const hasMetaDetails = Boolean(exhibition.location) || Boolean(exhibitionYearLabel);
 const hasMetaArtists = exhibitionArtists.length > 0;
 const hasExhibitionMeta = hasMetaTags || hasMetaDetails || hasMetaArtists;
 ---
@@ -121,14 +123,18 @@ const hasExhibitionMeta = hasMetaTags || hasMetaDetails || hasMetaArtists;
                         </span>
                       </div>
                     ) : null}
-                    {exhibition.year != null ? (
+                    {exhibitionYearLabel ? (
                       <div class="page-exhibition-meta-field page-exhibition-meta-field--year">
                         <span class="page-exhibition-meta-label">Year</span>
                         <time
                           class="page-exhibition-meta-value"
-                          datetime={String(exhibition.year)}
+                          datetime={
+                            exhibition.year != null
+                              ? String(exhibition.year)
+                              : undefined
+                          }
                         >
-                          {exhibition.year}
+                          {exhibitionYearLabel}
                         </time>
                       </div>
                     ) : null}

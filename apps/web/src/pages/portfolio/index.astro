@@ -1,6 +1,11 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getPortfolioPage, imageAlt, urlForSanityImage } from '../../lib/sanity';
+import {
+  getPortfolioPage,
+  imageAlt,
+  resolveDisplayYear,
+  urlForSanityImage
+} from '../../lib/sanity';
 import '../../styles/pages/portfolio.css';
 
 const portfolioPage = await getPortfolioPage();
@@ -14,7 +19,7 @@ const carouselItems = portfolioItems.map((item) => {
   return {
     title,
     subtitle,
-    year: item.year,
+    year: resolveDisplayYear(item),
     href: item.slug?.current ? `/portfolio/${item.slug.current}` : null,
     thumbSrc: urlForSanityImage(item.thumbnailImage, { width: 1400 }),
     thumbAlt: imageAlt(item.thumbnailImage, title)
@@ -100,7 +105,7 @@ function formatInitialLabel(item: (typeof carouselItems)[number]): string {
                             <figcaption class="page-portfolio-slide-overlay">
                               <span class="page-portfolio-slide-label">{label}</span>
                               {
-                                item?.year != null ? (
+                                item?.year ? (
                                   <span class="page-portfolio-slide-year">{item.year}</span>
                                 ) : (
                                   <span class="page-portfolio-slide-year" hidden />

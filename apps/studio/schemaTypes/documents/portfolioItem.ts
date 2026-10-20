@@ -32,6 +32,13 @@ export const portfolioItemType = defineType({
       validation: (Rule) => Rule.min(1900).max(2100)
     }),
     defineField({
+      name: 'displayYear',
+      title: 'Display year',
+      type: 'string',
+      description:
+        'Optional. Shown on the site instead of Year when set (e.g. 2021 – 2022). Leave empty to show the Year value.'
+    }),
+    defineField({
       name: 'thumbnailImage',
       title: 'Thumbnail image',
       type: 'image',

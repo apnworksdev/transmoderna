@@ -4,7 +4,7 @@ import netlify from '@astrojs/netlify';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://www.transmoderna.com',
+  site: 'https://www.transmoderna.net',
   output: 'server',
   adapter: netlify(),
   env: {

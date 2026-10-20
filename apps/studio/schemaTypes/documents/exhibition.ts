@@ -69,6 +69,13 @@ export const exhibitionType = defineType({
       validation: (Rule) => Rule.integer().min(1900).max(2100)
     }),
     defineField({
+      name: 'displayYear',
+      title: 'Display year',
+      type: 'string',
+      description:
+        'Optional. Shown on the site instead of Year when set (e.g. 2021 – 2022). Leave empty to show the Year value.'
+    }),
+    defineField({
       name: 'artists',
       title: 'Artists',
       type: 'array',

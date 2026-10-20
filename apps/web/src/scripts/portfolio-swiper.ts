@@ -21,7 +21,8 @@ type SwiperCleanup = () => void;
 export type PortfolioCarouselItem = {
   title: string;
   subtitle?: string;
-  year?: number;
+  /** Resolved display label (displayYear or year). */
+  year?: string;
   href: string | null;
   thumbSrc?: string;
   thumbAlt: string;
@@ -85,8 +86,8 @@ function applyPortfolioSlotContent(
   }
 
   if (year) {
-    if (item.year != null) {
-      year.textContent = String(item.year);
+    if (item.year) {
+      year.textContent = item.year;
       year.hidden = false;
     } else {
       year.textContent = '';

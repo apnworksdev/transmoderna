@@ -3,7 +3,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PlainText from '../../components/PlainText.astro';
 import ClientsMarquee from '../../components/ClientsMarquee.astro';
 import WorkMedia from '../../components/WorkMedia.astro';
-import { getWorkPage, imageAlt, urlForSanityImage } from '../../lib/sanity';
+import {
+  getWorkPage,
+  imageAlt,
+  resolveDisplayYear,
+  urlForSanityImage
+} from '../../lib/sanity';
 import '../../styles/pages/work.css';
 
 const workPage = await getWorkPage();
@@ -39,15 +44,19 @@ const backgroundAlt = imageAlt(workPage?.backgroundImage, 'Work page background'
         ) : (
           <ul class="page-work-list" data-work-accordion>
             {
-              works.map((item) => (
+              works.map((item) => {
+                const yearLabel = resolveDisplayYear(item);
+                return (
                 <li>
                   <article>
                     <details>
                       <summary>
                         <span class="page-work-list-item-summary">
                           <h2>{item.title}</h2>
-                          {item.year != null ? (
-                            <time datetime={String(item.year)}>{item.year}</time>
+                          {yearLabel ? (
+                            <time datetime={item.year != null ? String(item.year) : undefined}>
+                              {yearLabel}
+                            </time>
                           ) : null}
                         </span>
                       </summary>
@@ -72,7 +81,8 @@ const backgroundAlt = imageAlt(workPage?.backgroundImage, 'Work page background'
                     </details>
                   </article>
                 </li>
-              ))
+                );
+              })
             }
           </ul>
         )
