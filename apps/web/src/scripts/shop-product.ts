@@ -5,11 +5,7 @@ import {
   isOptionValueAvailable,
   type SelectableVariant
 } from '../lib/shop-options';
-import {
-  SWIPER_TOUCH_THRESHOLD,
-  prefersReducedMotion,
-  throttleRAF
-} from './exhibitions-swiper-shared.ts';
+import { throttleRAF } from './exhibitions-swiper-shared.ts';
 
 export type VariantPayload = SelectableVariant & {
   price?: number;
@@ -284,27 +280,8 @@ function wrapSlideIndex(index: number, total: number): number {
   return ((index % total) + total) % total;
 }
 
-function getDesktopTrackStep(track: HTMLElement): number {
-  const viewport = track.parentElement;
-  return viewport?.clientWidth || track.clientWidth || track.getBoundingClientRect().width;
-}
-
-function setDesktopTrackTransform(
-  track: HTMLElement,
-  index: number,
-  dragOffsetPx = 0,
-  animate = true
-): void {
-  const isDragging = !animate || dragOffsetPx !== 0;
-  track.classList.toggle('is-dragging', isDragging);
-
-  if (isDragging || prefersReducedMotion()) {
-    track.style.transition = 'none';
-  } else {
-    track.style.removeProperty('transition');
-  }
-
-  track.style.transform = `translate3d(calc(-${index * 100}% + ${dragOffsetPx}px), 0, 0)`;
+function setDesktopTrackTransform(track: HTMLElement, index: number): void {
+  track.style.transform = `translate3d(-${index * 100}%, 0, 0)`;
 }
 
 function clearDesktopTrackTransform(track: HTMLElement): void {
@@ -328,7 +305,7 @@ function wireProductMedia(root: HTMLElement, listeners: Array<() => void>): void
     activeIndex = 0;
   }
 
-  const goTo = (index: number, behavior: ScrollBehavior = 'smooth') => {
+  const goTo = (index: number, behavior: ScrollBehavior = 'auto') => {
     const nextIndex = wrapSlideIndex(index, slides.length);
     activeIndex = nextIndex;
     syncProductMediaAria(root, nextIndex);
@@ -338,7 +315,7 @@ function wireProductMedia(root: HTMLElement, listeners: Array<() => void>): void
       return;
     }
 
-    setDesktopTrackTransform(track, nextIndex, 0, behavior !== 'auto');
+    setDesktopTrackTransform(track, nextIndex);
   };
 
   thumbs.forEach((thumb) => {
@@ -373,88 +350,16 @@ function wireProductMedia(root: HTMLElement, listeners: Array<() => void>): void
   listeners.push(() => track.removeEventListener('scroll', onScroll));
 
   if (slides.length > 1) {
-    let dragStartX = 0;
-    let dragStartY = 0;
-    let dragOffsetPx = 0;
-    let isDragging = false;
-
-    const onPointerDown = (event: PointerEvent) => {
-      if (mobileQuery.matches || event.button !== 0) {
+    const onTrackClick = () => {
+      if (mobileQuery.matches) {
         return;
       }
 
-      isDragging = true;
-      dragStartX = event.clientX;
-      dragStartY = event.clientY;
-      dragOffsetPx = 0;
-      track.setPointerCapture(event.pointerId);
-      setDesktopTrackTransform(track, activeIndex, 0, false);
+      goTo(activeIndex + 1);
     };
 
-    const onPointerMove = (event: PointerEvent) => {
-      if (mobileQuery.matches || !isDragging) {
-        return;
-      }
-
-      dragOffsetPx = event.clientX - dragStartX;
-      setDesktopTrackTransform(track, activeIndex, dragOffsetPx, false);
-    };
-
-    const onPointerUp = (event: PointerEvent) => {
-      if (mobileQuery.matches || !isDragging) {
-        return;
-      }
-
-      isDragging = false;
-      if (track.hasPointerCapture(event.pointerId)) {
-        track.releasePointerCapture(event.pointerId);
-      }
-
-      const deltaX = dragStartX - event.clientX;
-      const deltaY = dragStartY - event.clientY;
-      const step = getDesktopTrackStep(track);
-      const threshold = Math.min(SWIPER_TOUCH_THRESHOLD, step * 0.12);
-
-      if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < threshold) {
-        goTo(activeIndex);
-        return;
-      }
-
-      goTo(activeIndex + (deltaX > 0 ? 1 : -1));
-    };
-
-    const onPointerCancel = (event: PointerEvent) => {
-      if (!isDragging) {
-        return;
-      }
-
-      isDragging = false;
-      if (track.hasPointerCapture(event.pointerId)) {
-        track.releasePointerCapture(event.pointerId);
-      }
-
-      goTo(activeIndex);
-    };
-
-    const onDragStart = (event: Event) => {
-      if (!mobileQuery.matches) {
-        event.preventDefault();
-      }
-    };
-
-    track.addEventListener('pointerdown', onPointerDown);
-    track.addEventListener('pointermove', onPointerMove);
-    track.addEventListener('pointerup', onPointerUp);
-    track.addEventListener('pointercancel', onPointerCancel);
-    track.addEventListener('dragstart', onDragStart);
-
-    listeners.push(() => {
-      track.removeEventListener('pointerdown', onPointerDown);
-      track.removeEventListener('pointermove', onPointerMove);
-      track.removeEventListener('pointerup', onPointerUp);
-      track.removeEventListener('pointercancel', onPointerCancel);
-      track.removeEventListener('dragstart', onDragStart);
-    });
+    track.addEventListener('click', onTrackClick);
+    listeners.push(() => track.removeEventListener('click', onTrackClick));
   }
 
   const syncForViewport = () => {
@@ -467,7 +372,7 @@ function wireProductMedia(root: HTMLElement, listeners: Array<() => void>): void
     }
 
     track.scrollLeft = 0;
-    setDesktopTrackTransform(track, activeIndex, 0, false);
+    setDesktopTrackTransform(track, activeIndex);
   };
 
   const onResize = throttleRAF(() => {
@@ -475,7 +380,7 @@ function wireProductMedia(root: HTMLElement, listeners: Array<() => void>): void
       return;
     }
 
-    setDesktopTrackTransform(track, activeIndex, 0, false);
+    setDesktopTrackTransform(track, activeIndex);
   });
 
   mobileQuery.addEventListener('change', syncForViewport);
