@@ -17,25 +17,14 @@ Create a custom app in Shopify Admin with:
 - **Admin API** — for custom sync (later) and Sanity Connect
 - **Storefront API** — public token for cart/checkout
 
-Add to `apps/web/.env`:
-
-```env
-PUBLIC_SHOPIFY_DOMAIN=your-store.myshopify.com
-PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN=
-PUBLIC_SHOPIFY_MARKET_COUNTRY=   # optional, e.g. ES
-
-SANITY_STUDIO_SHOPIFY_DOMAIN=your-store.myshopify.com
-SANITY_STUDIO_SHOPIFY_ADMIN_ACCESS_TOKEN=
-SANITY_API_WRITE_TOKEN=          # for custom sync webhook
-```
+Put the Storefront values in `apps/web/.env`. The key names are already in `apps/web/.env.example`. `SANITY_API_WRITE_TOKEN` can stay empty until custom sync is implemented.
 
 ## 2. Sanity Connect
 
 1. Install [Sanity Connect](https://www.sanity.io/plugins/sanity-connect) on your Shopify store.
-2. Link project `6fitszr8` (or yours) and dataset `production`.
+2. Link the existing Sanity project and dataset.
 3. Run **Sync all** so `product` / `productVariant` documents appear.
-4. Set **Custom sync URL** (when full sync is implemented):  
-   `https://<your-domain>/api/shopify-sync`
+4. Leave **Custom sync URL** unset for now. `POST /api/shopify-sync` checks `SHOPIFY_SYNC_SECRET`, then returns **501**. Product schemas exist; the handler in `packages/shopify-sync` does not write to Sanity yet. When it does, the URL is `https://<your-domain>/api/shopify-sync`.
 
 ## 3. Studio
 

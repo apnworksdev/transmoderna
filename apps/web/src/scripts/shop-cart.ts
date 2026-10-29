@@ -38,7 +38,6 @@ type CartData = {
 type StorefrontConfig = {
   endpoint: string;
   token: string;
-  marketCountry: string;
 };
 
 function getShopRoot(): HTMLElement | null {
@@ -53,22 +52,9 @@ function readConfig(root: HTMLElement): StorefrontConfig & {
   return {
     endpoint: `https://${domain}/api/${API_VERSION}/graphql.json`,
     token: root.dataset.storefrontToken ?? '',
-    marketCountry: root.dataset.marketCountry ?? '',
     handle: root.dataset.productHandle ?? '',
     page: root.dataset.shopPage ?? ''
   };
-}
-
-function inContextDirective(marketCountry: string): string {
-  return marketCountry ? '@inContext(country: $country)' : '';
-}
-
-function withCountryVariables(
-  marketCountry: string,
-  variables?: Record<string, unknown>
-): Record<string, unknown> | undefined {
-  if (!marketCountry) return variables;
-  return { ...(variables ?? {}), country: marketCountry };
 }
 
 type StorefrontResponse = {
@@ -96,7 +82,7 @@ async function storefrontFetch(
     },
     body: JSON.stringify({
       query,
-      variables: withCountryVariables(config.marketCountry, variables)
+      variables
     })
   });
 
@@ -156,74 +142,30 @@ const CART_FRAGMENT = `
   }
 `;
 
-function cartGetQuery(marketCountry: string): string {
-  if (marketCountry) {
-    return `query CartGet($id: ID!, $country: CountryCode!) ${inContextDirective(marketCountry)} {
-      cart(id: $id) { ${CART_FRAGMENT} }
-    }`;
-  }
-  return `query CartGet($id: ID!) { cart(id: $id) { ${CART_FRAGMENT} } }`;
-}
+const CART_GET_QUERY = `query CartGet($id: ID!) { cart(id: $id) { ${CART_FRAGMENT} } }`;
 
-function cartCreateMutation(marketCountry: string): string {
-  if (marketCountry) {
-    return `mutation CartCreate($country: CountryCode!) ${inContextDirective(marketCountry)} {
-      cartCreate { cart { ${CART_FRAGMENT} } userErrors { message } }
-    }`;
-  }
-  return `mutation { cartCreate { cart { ${CART_FRAGMENT} } userErrors { message } } }`;
-}
+const CART_CREATE_MUTATION = `mutation { cartCreate { cart { ${CART_FRAGMENT} } userErrors { message } } }`;
 
-function cartLinesAddMutation(marketCountry: string): string {
-  if (marketCountry) {
-    return `mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!, $country: CountryCode!) ${inContextDirective(marketCountry)} {
-      cartLinesAdd(cartId: $cartId, lines: $lines) {
-        cart { ${CART_FRAGMENT} }
-        userErrors { message field code }
-      }
-    }`;
+const CART_LINES_ADD_MUTATION = `mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
+  cartLinesAdd(cartId: $cartId, lines: $lines) {
+    cart { ${CART_FRAGMENT} }
+    userErrors { message field code }
   }
-  return `mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
-    cartLinesAdd(cartId: $cartId, lines: $lines) {
-      cart { ${CART_FRAGMENT} }
-      userErrors { message field code }
-    }
-  }`;
-}
+}`;
 
-function cartLinesUpdateMutation(marketCountry: string): string {
-  if (marketCountry) {
-    return `mutation CartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!, $country: CountryCode!) ${inContextDirective(marketCountry)} {
-      cartLinesUpdate(cartId: $cartId, lines: $lines) {
-        cart { ${CART_FRAGMENT} }
-        userErrors { message field code }
-      }
-    }`;
+const CART_LINES_UPDATE_MUTATION = `mutation CartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
+  cartLinesUpdate(cartId: $cartId, lines: $lines) {
+    cart { ${CART_FRAGMENT} }
+    userErrors { message field code }
   }
-  return `mutation CartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
-    cartLinesUpdate(cartId: $cartId, lines: $lines) {
-      cart { ${CART_FRAGMENT} }
-      userErrors { message field code }
-    }
-  }`;
-}
+}`;
 
-function cartLinesRemoveMutation(marketCountry: string): string {
-  if (marketCountry) {
-    return `mutation CartLinesRemove($cartId: ID!, $lineIds: [ID!]!, $country: CountryCode!) ${inContextDirective(marketCountry)} {
-      cartLinesRemove(cartId: $cartId, lineIds: $lineIds) {
-        cart { ${CART_FRAGMENT} }
-        userErrors { message field code }
-      }
-    }`;
+const CART_LINES_REMOVE_MUTATION = `mutation CartLinesRemove($cartId: ID!, $lineIds: [ID!]!) {
+  cartLinesRemove(cartId: $cartId, lineIds: $lineIds) {
+    cart { ${CART_FRAGMENT} }
+    userErrors { message field code }
   }
-  return `mutation CartLinesRemove($cartId: ID!, $lineIds: [ID!]!) {
-    cartLinesRemove(cartId: $cartId, lineIds: $lineIds) {
-      cart { ${CART_FRAGMENT} }
-      userErrors { message field code }
-    }
-  }`;
-}
+}`;
 
 function resolveVariantGid(buyRoot: HTMLElement): string | undefined {
   return getSelectedVariantId(buyRoot);
@@ -375,7 +317,7 @@ async function getOrCreateCart(config: StorefrontConfig): Promise<CartData> {
     const existing = localStorage.getItem(CART_KEY);
     if (existing) {
       try {
-        const data = await storefrontFetch(config, cartGetQuery(config.marketCountry), { id: existing });
+        const data = await storefrontFetch(config, CART_GET_QUERY, { id: existing });
         if (data?.cart && (data.cart as CartData).id) {
           return data.cart as CartData;
         }
@@ -384,7 +326,7 @@ async function getOrCreateCart(config: StorefrontConfig): Promise<CartData> {
       }
     }
 
-    const data = await storefrontFetch(config, cartCreateMutation(config.marketCountry));
+    const data = await storefrontFetch(config, CART_CREATE_MUTATION);
     assertNoUserErrors(data, 'cartCreate');
     const cart = data?.cartCreate as { cart?: CartData } | undefined;
     if (!cart?.cart?.id) throw new Error('Failed to create cart');
@@ -403,7 +345,7 @@ async function fetchCart(config: StorefrontConfig): Promise<CartData | null> {
   const existing = localStorage.getItem(CART_KEY);
   if (!existing) return null;
 
-  const data = await storefrontFetch(config, cartGetQuery(config.marketCountry), { id: existing });
+  const data = await storefrontFetch(config, CART_GET_QUERY, { id: existing });
   return (data?.cart as CartData | null) ?? null;
 }
 
@@ -443,13 +385,13 @@ async function updateLineQuantity(lineId: string, quantity: number): Promise<voi
 
   try {
     if (quantity <= 0) {
-      const data = await storefrontFetch(config, cartLinesRemoveMutation(config.marketCountry), {
+      const data = await storefrontFetch(config, CART_LINES_REMOVE_MUTATION, {
         cartId,
         lineIds: [lineId]
       });
       assertNoUserErrors(data, 'cartLinesRemove');
     } else {
-      const data = await storefrontFetch(config, cartLinesUpdateMutation(config.marketCountry), {
+      const data = await storefrontFetch(config, CART_LINES_UPDATE_MUTATION, {
         cartId,
         lines: [{ id: lineId, quantity }]
       });
@@ -516,7 +458,7 @@ export function initShopCart(): (() => void) | null {
 
         const quantity = getSelectedQuantity(buyRoot);
         const cart = await getOrCreateCart(config);
-        const data = await storefrontFetch(config, cartLinesAddMutation(config.marketCountry), {
+        const data = await storefrontFetch(config, CART_LINES_ADD_MUTATION, {
           cartId: cart.id,
           lines: [{ merchandiseId, quantity }]
         });

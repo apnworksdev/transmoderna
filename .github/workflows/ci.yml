@@ -10,7 +10,7 @@ jobs:
     env:
       PUBLIC_SANITY_PROJECT_ID: ci-placeholder
       PUBLIC_SANITY_DATASET: production
-      PUBLIC_SANITY_API_VERSION: '2026-05-11'
+      PUBLIC_SANITY_API_VERSION: '2025-08-15'
       SANITY_STUDIO_PROJECT_ID: ci-placeholder
       SANITY_STUDIO_DATASET: production
     steps:

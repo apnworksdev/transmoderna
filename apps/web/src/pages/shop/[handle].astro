@@ -43,7 +43,6 @@ const images =
 const imagesJson = JSON.stringify(images);
 const shopifyDomain = import.meta.env.PUBLIC_SHOPIFY_DOMAIN ?? '';
 const storefrontToken = import.meta.env.PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN ?? '';
-const marketCountry = import.meta.env.PUBLIC_SHOPIFY_MARKET_COUNTRY ?? '';
 
 Astro.response.headers.set(
   'Cache-Control',
@@ -58,7 +57,6 @@ Astro.response.headers.set(
     data-shop-page="product"
     data-shopify-domain={shopifyDomain}
     data-storefront-token={storefrontToken}
-    data-market-country={marketCountry}
     data-product-handle={slug}
     data-product-images={imagesJson}
     data-variants-truncated={storefront?.variantsTruncated ? 'true' : 'false'}

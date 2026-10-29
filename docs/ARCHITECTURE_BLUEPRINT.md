@@ -1,8 +1,17 @@
 # Architecture blueprint — Astro + Sanity + Shopify monorepo
 
-Use this document as the **single source of truth** when scaffolding a new project (**Astro + Sanity Studio + Shopify on Netlify**). It describes **how the system is shaped**, not individual schemas or pages.
+**This is the original scaffold spec, not a description of the current repo.** For day-to-day work, use the root [README](../README.md) and the setup docs. Known drift:
 
-Derived from the **Contra** monorepo and extended with production practices (shared packages, full sync, env validation, preview, CI). **Framework target: Astro 6+ with SSR** (`@astrojs/netlify`).
+- The site is **Astro 7**, not Astro 6.
+- Studio schema, pages, and shop UI are already built. Custom Shopify sync still returns **501**.
+- Sanity API version in code and `.env.example` is **`2025-08-15`**.
+- Netlify builds are the commands in `apps/web/netlify.toml` and `apps/studio/netlify.toml` (also §7). Do not `cd ../..`.
+- There is no `LAYLO_API_TOKEN`. `SHOPIFY_SYNC_SECRET` is a real server env var.
+- `apps/web/src/middleware.ts` redirects Work, Exhibitions, Portfolio, Podcasts, and About to `/`.
+
+Use this document as the **shape** of an Astro + Sanity Studio + Shopify monorepo on Netlify. It describes how the system is shaped, not individual schemas or pages.
+
+Derived from the **Contra** monorepo and extended with production practices (shared packages, full sync, env validation, preview, CI). **Framework: Astro 7 with SSR** (`@astrojs/netlify`).
 
 ---
 
@@ -337,7 +346,7 @@ export const POST: APIRoute = (ctx) => runShopifySync(ctx.request);
 
 `src/scripts/shop-cart.ts` (loaded with `<script>` from shop pages):
 
-- Env via `data-shopify-domain`, `data-storefront-token`, `data-market-country` on `[data-shop-root]` (from `PUBLIC_*` in Astro frontmatter).
+- Env via `data-shopify-domain` and `data-storefront-token` on `[data-shop-root]` (from `PUBLIC_*` in Astro frontmatter).
 - Endpoint: `https://{domain}/api/2024-01/graphql.json`
 - Header: `X-Shopify-Storefront-Access-Token`
 - `localStorage` cart id.
@@ -402,17 +411,15 @@ const serverSchema = z.object({
   SANITY_STUDIO_DATASET: z.string().default('production'),
   SANITY_API_WRITE_TOKEN: z.string().min(1).optional(), // required on sync host
   SANITY_API_READ_TOKEN: z.string().optional(),
-  SANITY_STUDIO_SHOPIFY_DOMAIN: z.string().optional(),
-  SANITY_STUDIO_SHOPIFY_ADMIN_ACCESS_TOKEN: z.string().optional()
+  SANITY_STUDIO_SHOPIFY_DOMAIN: z.string().optional()
 });
 
 const publicSchema = z.object({
   PUBLIC_SANITY_PROJECT_ID: z.string().min(1),
   PUBLIC_SANITY_DATASET: z.string().default('production'),
-  PUBLIC_SANITY_API_VERSION: z.string().default('2026-05-11'),
+  PUBLIC_SANITY_API_VERSION: z.string().default('2025-08-15'),
   PUBLIC_SHOPIFY_DOMAIN: z.string().optional(),
-  PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN: z.string().optional(),
-  PUBLIC_SHOPIFY_MARKET_COUNTRY: z.string().optional()
+  PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN: z.string().optional()
 });
 ```
 
@@ -449,9 +456,8 @@ Avoid embedding multi-megabyte Sanity originals.
 
 ### 5.8 Markets / i18n (when needed)
 
-- `PUBLIC_SHOPIFY_MARKET_COUNTRY` → Storefront `@inContext(country: $country)`.
+- The shop uses the store’s default market. There is no country env var.
 - Plan Sanity **internationalized fields** or separate documents early if multi-locale content.
-- Same market country on `product-variants` and cart scripts.
 
 ---
 
@@ -463,12 +469,11 @@ Avoid embedding multi-megabyte Sanity originals.
 # Sanity (public read — Astro PUBLIC_*)
 PUBLIC_SANITY_PROJECT_ID=
 PUBLIC_SANITY_DATASET=production
-PUBLIC_SANITY_API_VERSION=2026-05-11
+PUBLIC_SANITY_API_VERSION=2025-08-15
 
 # Shopify Storefront (public — browser cart)
 PUBLIC_SHOPIFY_DOMAIN=your-store.myshopify.com
 PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN=
-PUBLIC_SHOPIFY_MARKET_COUNTRY=
 
 # Shopify → Sanity sync (server only — never PUBLIC_)
 SANITY_STUDIO_PROJECT_ID=
@@ -477,13 +482,12 @@ SANITY_API_WRITE_TOKEN=
 
 # Full sync (server only)
 SANITY_STUDIO_SHOPIFY_DOMAIN=your-store.myshopify.com
-SANITY_STUDIO_SHOPIFY_ADMIN_ACCESS_TOKEN=
 
-# Preview (server only)
+# Preview / private dataset reads (server only)
 SANITY_API_READ_TOKEN=
 
-# Third-party (server only)
-LAYLO_API_TOKEN=
+# Shared secret for POST /api/shopify-sync
+SHOPIFY_SYNC_SECRET=
 ```
 
 ### 6.2 `apps/studio/.env.example`
@@ -507,8 +511,10 @@ Two sites — `docs/netlify-setup.md`.
 
 | Site | Base directory | Build | Publish |
 |------|----------------|-------|---------|
-| Web | `apps/web` | `cd ../.. && npm install --include=optional && npm run build --workspace web` | `dist` |
-| Studio | `apps/studio` | `npm run build` | `dist` |
+| Web | `apps/web` (or empty; paths below are repo-root relative) | `npm install --include=optional && npm run build --workspace web` | `apps/web/dist` |
+| Studio | `apps/studio` | `npm install && npm run build --workspace studio` | `apps/studio/dist` |
+
+Do **not** `cd ../..` in the Netlify build command. Netlify already runs from the repo root; leaving the checkout fails with `EACCES`. The commands above match the `netlify.toml` files.
 
 **Web env:** all `PUBLIC_*` + server secrets.
 
@@ -722,4 +728,4 @@ Keep `packages/shopify-sync` and `packages/shared` unchanged — only the HTTP a
 
 ---
 
-*Framework: **Astro 6+** (SSR, Netlify). Commerce: **Sanity Connect** + **custom sync package** + **Storefront API**.*
+*Framework: **Astro 7** (SSR, Netlify). Commerce: **Sanity Connect** + **custom sync package** + **Storefront API**.*

@@ -1,6 +1,5 @@
 const domain = import.meta.env.PUBLIC_SHOPIFY_DOMAIN;
 const token = import.meta.env.PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN;
-const marketCountry = import.meta.env.PUBLIC_SHOPIFY_MARKET_COUNTRY;
 const apiVersion = '2024-01';
 
 const VARIANTS_FIRST = 250;
@@ -46,14 +45,6 @@ export function isStorefrontConfigured(): boolean {
       typeof token === 'string' &&
       token.length > 0
   );
-}
-
-function getMarketCountry(): string | null {
-  return typeof marketCountry === 'string' && marketCountry ? marketCountry : null;
-}
-
-function inContextDirective(country: string | null): string {
-  return country ? '@inContext(country: $country)' : '';
 }
 
 function sanitizeHandle(handle: string): string | null {
@@ -141,18 +132,11 @@ const PRODUCT_FIELDS = `
   }
 `;
 
-const PRODUCT_BY_HANDLE_QUERY = (country: string | null) =>
-  country
-    ? `query ProductByHandle($handle: String!, $country: CountryCode!) ${inContextDirective(country)} {
-        product(handle: $handle) {
-          ${PRODUCT_FIELDS}
-        }
-      }`
-    : `query ProductByHandle($handle: String!) {
-        product(handle: $handle) {
-          ${PRODUCT_FIELDS}
-        }
-      }`;
+const PRODUCT_BY_HANDLE_QUERY = `query ProductByHandle($handle: String!) {
+  product(handle: $handle) {
+    ${PRODUCT_FIELDS}
+  }
+}`;
 
 type RawStorefrontProduct = {
   images?: { edges?: Array<{ node?: { url?: string; altText?: string | null } }> };
@@ -190,29 +174,23 @@ function parseStorefrontProduct(product: RawStorefrontProduct | null | undefined
   };
 }
 
-function buildProductsBatchQuery(handles: string[], country: string | null): string {
+function buildProductsBatchQuery(handles: string[]): string {
   const productSelections = handles
     .map((_, index) => `p${index}: product(handle: $handle${index}) { ${PRODUCT_FIELDS} }`)
     .join('\n');
 
   const variableDefs = handles.map((_, index) => `$handle${index}: String!`).join(', ');
-  const context = country ? `($country: CountryCode!, ${variableDefs}) ${inContextDirective(country)}` : `(${variableDefs})`;
 
-  return `query ProductsBatch${context} {\n${productSelections}\n}`;
+  return `query ProductsBatch(${variableDefs}) {\n${productSelections}\n}`;
 }
 
 async function fetchProductsBatch(handles: string[]): Promise<Map<string, StorefrontProductData | null>> {
-  const country = getMarketCountry();
-  const query = buildProductsBatchQuery(handles, country);
+  const query = buildProductsBatchQuery(handles);
   const variables: Record<string, unknown> = {};
 
   handles.forEach((handle, index) => {
     variables[`handle${index}`] = handle;
   });
-
-  if (country) {
-    variables.country = country;
-  }
 
   const data = await storefrontFetch<Record<string, RawStorefrontProduct | null>>(query, variables);
   const results = new Map<string, StorefrontProductData | null>();
@@ -291,10 +269,9 @@ export async function fetchProductStorefrontDataByHandle(
   }
 
   try {
-    const country = getMarketCountry();
     const data = await storefrontFetch<{ product?: RawStorefrontProduct | null }>(
-      PRODUCT_BY_HANDLE_QUERY(country),
-      country ? { handle: safeHandle, country } : { handle: safeHandle }
+      PRODUCT_BY_HANDLE_QUERY,
+      { handle: safeHandle }
     );
 
     const parsed = parseStorefrontProduct(data.product);
