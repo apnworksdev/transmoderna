@@ -1,0 +1,67 @@
+html:has(body > .site-links) {
+  overflow-y: auto;
+}
+
+body:has(.site-links:not(.is-inline)) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+body:has(.page-exhibitions) .site-links {
+  padding-bottom: 60px;
+  display: none;
+}
+
+.site-links {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+  padding: 32px var(--margin) 40px;
+}
+
+.site-links-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 16px;
+  max-width: 920px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-links a {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-xs);
+  text-transform: uppercase;
+  color: var(--gray-color);
+}
+
+.site-links a:hover,
+.site-links a[aria-current='page'] {
+  color: var(--foreground-color);
+}
+
+.site-links.is-inline {
+  margin-top: 0;
+  padding: 0;
+}
+
+.site-footer:has(.site-links) {
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+body:has(.page-shop-bottom) .site-links:not(.is-inline) {
+  padding-bottom: calc(var(--margin) + 29px + 16px);
+}
+
+@media (max-width: 820px) {
+  body:has(.page-exhibitions) .site-links {
+    padding-bottom: 70px;
+  }
+}

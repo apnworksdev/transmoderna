@@ -2,6 +2,7 @@ import {
   ABOUT_DOCUMENT_ID,
   HOME_DOCUMENT_ID,
   SHOP_DOCUMENT_ID,
+  SITE_FOOTER_DOCUMENT_ID,
   SITE_HEADER_DOCUMENT_ID,
   EXHIBITIONS_PAGE_DOCUMENT_ID,
   PODCAST_PAGE_DOCUMENT_ID,
@@ -14,8 +15,10 @@ import {
   ControlsIcon,
   DocumentIcon,
   DocumentsIcon,
+  DocumentTextIcon,
   HomeIcon,
   ImagesIcon,
+  InsertBelowIcon,
   MenuIcon,
   MicrophoneIcon,
   PresentationIcon,
@@ -40,7 +43,13 @@ export const structure: StructureResolver = (S) =>
                 .title('Header')
                 .id(SITE_HEADER_DOCUMENT_ID)
                 .icon(MenuIcon)
-                .child(S.document().schemaType('siteHeader').documentId(SITE_HEADER_DOCUMENT_ID))
+                .child(S.document().schemaType('siteHeader').documentId(SITE_HEADER_DOCUMENT_ID)),
+              S.listItem()
+                .title('Footer')
+                .id(SITE_FOOTER_DOCUMENT_ID)
+                .icon(InsertBelowIcon)
+                .child(S.document().schemaType('siteFooter').documentId(SITE_FOOTER_DOCUMENT_ID)),
+              S.documentTypeListItem('legalPage').title('Legal pages').icon(DocumentTextIcon)
             ])
         ),
       S.divider(),

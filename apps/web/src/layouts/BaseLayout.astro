@@ -1,6 +1,7 @@
 ---
+import SiteFooter from '../components/SiteFooter.astro';
 import SiteHeader from '../components/SiteHeader.astro';
-import { getHome, getSiteHeader } from '../lib/sanity';
+import { getHome, getSiteFooterLinks, getSiteHeader } from '../lib/sanity';
 import type { SanityImageWithAlt, SiteMenuLink } from '../lib/sanity';
 import {
   HOME_INTRO_SESSION_KEY,
@@ -11,6 +12,7 @@ import { ClientRouter, fade } from 'astro:transitions';
 import '../styles/index.css';
 import '../styles/components/fixed-footer.css';
 import '../styles/components/nav.css';
+import '../styles/components/site-links.css';
 import '../styles/components/page-transitions.css';
 
 export type FixedFooterSize = 'big' | 'small' | 'hidden';
@@ -35,7 +37,7 @@ const {
   fixedFooter = 'hidden'
 } = Astro.props;
 const isIndex = variant === 'index';
-const siteHeader = await getSiteHeader();
+const [siteHeader, footerLinks] = await Promise.all([getSiteHeader(), getSiteFooterLinks()]);
 
 let footerLogo = footerLogoProp;
 if (footerLogo === undefined) {
@@ -104,7 +106,9 @@ if (isIndex) {
       hideSiteHeader ? null : (
         <SiteHeader
           logo={siteHeader?.logo}
+          showMenu={siteHeader?.showMenu === true}
           menuLinks={menuLinks}
+          footerLinks={isIndex ? [] : footerLinks}
           footerLogo={footerLogo}
           deferChromeReveal={isIndex}
         />
@@ -112,6 +116,8 @@ if (isIndex) {
     }
 
     <slot />
+
+    {isIndex ? null : <SiteFooter links={footerLinks} />}
 
     {
       fixedFooter !== 'hidden' ? (

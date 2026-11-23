@@ -1,3 +1,5 @@
+@import '../components/shop-background.css';
+
 .page-shop {
   --shop-bottom-h: 52px;
   --shop-gap: 1px;
@@ -26,35 +28,6 @@
 .page-shop[data-shop-page='index'] {
   display: flex;
   flex-direction: column;
-}
-
-.page-shop-bg {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.page-shop-bg img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: blur(22px);
-  transform: scale(1.08);
-}
-
-.page-shop-bg::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.55) 0%,
-    rgba(0, 0, 0, 0.35) 45%,
-    rgba(0, 0, 0, 0.65) 100%
-  );
 }
 
 .page-shop-grid {

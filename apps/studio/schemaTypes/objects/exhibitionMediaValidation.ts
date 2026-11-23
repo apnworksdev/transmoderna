@@ -1,3 +1,4 @@
+import { isYouTubeUrl } from '@repo/shared';
 import type { ValidationContext } from 'sanity';
 import { isVimeoUrl } from './vimeoVideo';
 
@@ -5,6 +6,7 @@ type ExhibitionMediaValue = {
   kind?: string;
   image?: unknown;
   videoUrl?: string;
+  youtubeUrl?: string;
 };
 
 export function validateExhibitionMedia(value: unknown): true | string {
@@ -18,11 +20,21 @@ export function validateExhibitionMedia(value: unknown): true | string {
   if (media.kind === 'image' && !media.image) {
     return 'Add an image';
   }
-  if (media.kind === 'video' && !media.videoUrl?.trim()) {
-    return 'Add a Vimeo URL';
-  }
-  if (media.kind === 'video' && media.videoUrl && !isVimeoUrl(media.videoUrl)) {
-    return 'Use a valid vimeo.com URL';
+  if (media.kind === 'video') {
+    const vimeo = media.videoUrl?.trim() ?? '';
+    const youtube = media.youtubeUrl?.trim() ?? '';
+    if (vimeo && youtube) {
+      return 'Use either a Vimeo URL or a YouTube URL, not both';
+    }
+    if (!vimeo && !youtube) {
+      return 'Add a Vimeo URL or a YouTube URL';
+    }
+    if (vimeo && !isVimeoUrl(vimeo)) {
+      return 'Use a valid vimeo.com URL';
+    }
+    if (youtube && !isYouTubeUrl(youtube)) {
+      return 'Use a valid YouTube URL';
+    }
   }
   return true;
 }

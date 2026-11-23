@@ -11,5 +11,21 @@ export default defineConfig({
   plugins: [structureTool({ structure })],
   schema: {
     types: schemaTypes
+  },
+  document: {
+    newDocumentOptions: (prev, { creationContext }) => {
+      if (creationContext.type === 'global') {
+        return prev.filter((item) => item.templateId !== 'siteFooter');
+      }
+      return prev;
+    },
+    actions: (prev, { schemaType }) => {
+      if (schemaType === 'siteFooter') {
+        return prev.filter(
+          (action) => action.action !== 'delete' && action.action !== 'duplicate'
+        );
+      }
+      return prev;
+    }
   }
 });

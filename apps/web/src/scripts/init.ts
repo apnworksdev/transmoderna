@@ -1,3 +1,4 @@
+import { initAmbientYoutubePlayers } from './ambient-youtube.ts';
 import { destroyAboutTeam, initAboutTeam } from './about-team.ts';
 import { destroyAboutClock, initAboutClock } from './about-clock.ts';
 import { destroyExhibitionsView, initExhibitionsView } from './exhibitions-view.ts';
@@ -19,6 +20,7 @@ import { destroyShopSearch, initShopSearch } from './shop-search.ts';
 import { initWorkAccordion } from './work-accordion.ts';
 
 let cleanupLayout: (() => void) | null = null;
+let cleanupAmbientYoutube: (() => void) | null = null;
 let cleanupPortfolioSwiper: (() => void) | null = null;
 let cleanupPortfolioVideoPlayer: (() => void) | null = null;
 let cleanupPodcastsPlayer: (() => void) | null = null;
@@ -55,6 +57,9 @@ export function initApp(): void {
   cleanupPortfolioVideoPlayer?.();
   cleanupPortfolioVideoPlayer = initPortfolioVideoPlayer();
 
+  cleanupAmbientYoutube?.();
+  cleanupAmbientYoutube = initAmbientYoutubePlayers();
+
   cleanupPodcastsPlayer?.();
   cleanupPodcastsPlayer = initPodcastsPlayer();
 }
@@ -65,6 +70,9 @@ function destroyPortfolioModules(): void {
 
   cleanupPortfolioVideoPlayer?.();
   cleanupPortfolioVideoPlayer = null;
+
+  cleanupAmbientYoutube?.();
+  cleanupAmbientYoutube = null;
 
   destroyPortfolioSwiper();
 }

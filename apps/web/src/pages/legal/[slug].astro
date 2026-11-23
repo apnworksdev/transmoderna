@@ -1,0 +1,38 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PortableTextHtml from '../../components/PortableTextHtml.astro';
+import ShopBackground from '../../components/shop/ShopBackground.astro';
+import { getLegalPage } from '../../lib/sanity';
+import '../../styles/components/shop-background.css';
+import '../../styles/pages/legal.css';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+if (!slug) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
+}
+
+const page = await getLegalPage(slug);
+if (!page) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
+}
+
+const title = page.title?.trim() || 'Legal';
+---
+
+<BaseLayout title={`${title} — Transmoderna`}>
+  <main class="page-legal">
+    <ShopBackground />
+    <article class="page-legal-article">
+      <h1 class="page-legal-title">{title}</h1>
+      {
+        page.body?.length ? (
+          <div class="page-legal-body">
+            <PortableTextHtml blocks={page.body} />
+          </div>
+        ) : null
+      }
+    </article>
+  </main>
+</BaseLayout>

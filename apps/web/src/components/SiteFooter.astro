@@ -1,0 +1,44 @@
+---
+import type { SiteFooterLink } from '../lib/sanity';
+
+interface Props {
+  links: SiteFooterLink[];
+  /** Sit in a parent footer instead of fixed to the viewport. */
+  inline?: boolean;
+  /** Home index: hidden until the intro finishes. */
+  deferChromeReveal?: boolean;
+}
+
+const { links, inline = false, deferChromeReveal = false } = Astro.props;
+const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
+const Tag = inline ? 'div' : 'footer';
+---
+
+{
+  links.length > 0 ? (
+    <Tag
+      class:list={['site-links', inline && 'is-inline', deferChromeReveal && 'site-chrome']}
+      data-site-chrome={deferChromeReveal ? '' : undefined}
+    >
+      <nav aria-label="Footer">
+        <ul class="site-links-list">
+          {links.map((link) => {
+            const path = link.external ? '' : link.href.replace(/\/$/, '') || '/';
+            return (
+              <li>
+                <a
+                  href={link.href}
+                  aria-current={!link.external && path === currentPath ? 'page' : undefined}
+                  target={link.external ? '_blank' : undefined}
+                  rel={link.external ? 'noopener noreferrer' : undefined}
+                >
+                  {link.label}
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </Tag>
+  ) : null
+}

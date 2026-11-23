@@ -4,3 +4,4 @@ export * from './shopify-document-types.js';
 export * from './shopify-ids.js';
 export * from './singleton-ids.js';
 export * from './site-nav.js';
+export * from './youtube.js';

@@ -1,18 +1,19 @@
-import { defineMiddleware } from 'astro:middleware';
 import { SITE_MENU_FALLBACK_LINKS } from '@repo/shared';
+import { defineMiddleware } from 'astro:middleware';
+import { isSiteMenuEnabled } from './lib/sanity';
 
-/** Shop-only launch: send Work / Exhibitions / Portfolio / Podcasts / About home. Remove this file when the rest of the site goes live. */
-const SHOP_ONLY_REDIRECT_PREFIXES = SITE_MENU_FALLBACK_LINKS.map((link) => link.href);
+/** Work, Exhibitions, Portfolio, Podcasts, and About stay unreachable until “Show menu pages” is on. */
+const HIDDEN_MENU_PREFIXES = SITE_MENU_FALLBACK_LINKS.map((link) => link.href);
 
-export const onRequest = defineMiddleware((context, next) => {
+export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
-  const shouldRedirect = SHOP_ONLY_REDIRECT_PREFIXES.some(
+  const isHiddenSection = HIDDEN_MENU_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );
 
-  if (shouldRedirect) {
-    return context.redirect('/');
+  if (!isHiddenSection || (await isSiteMenuEnabled())) {
+    return next();
   }
 
-  return next();
+  return context.redirect('/');
 });

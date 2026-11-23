@@ -4,8 +4,10 @@ import {
   HOME_DOCUMENT_ID,
   PODCAST_PAGE_DOCUMENT_ID,
   PORTFOLIO_PAGE_DOCUMENT_ID,
+  SITE_FOOTER_DOCUMENT_ID,
   SITE_HEADER_DOCUMENT_ID,
-  WORK_PAGE_DOCUMENT_ID
+  WORK_PAGE_DOCUMENT_ID,
+  youtubeVideoId
 } from '@repo/shared';
 import { createClient } from '@sanity/client';
 import { createImageUrlBuilder, type SanityImageSource } from '@sanity/image-url';
@@ -34,6 +36,8 @@ export type VimeoVideo = {
 
 export type WorkMedia = {
   url?: string;
+  youtubeUrl?: string;
+  youtubeId?: string;
   videoSrc?: string;
   videoPoster?: string;
   poster?: SanityImageWithAlt;
@@ -49,7 +53,19 @@ export type SiteMenuLink = {
 
 export type SiteHeaderDocument = {
   logo?: SanityImageWithAlt;
+  showMenu?: boolean;
   menuLinks?: SiteMenuLink[];
+};
+
+export type SiteFooterLink = {
+  label: string;
+  href: string;
+  external: boolean;
+};
+
+export type LegalPageDocument = {
+  title?: string;
+  body?: PortableTextBlock[];
 };
 
 export type HomeDocument = {
@@ -87,6 +103,8 @@ export type ExhibitionMedia = {
   kind?: 'image' | 'video';
   image?: SanityImageWithAlt;
   videoUrl?: string;
+  youtubeUrl?: string;
+  youtubeId?: string;
   videoSrc?: string;
 };
 
@@ -294,6 +312,140 @@ const siteHeaderImageProjection = `{
   asset->{ url, mimeType }
 }`;
 
+/** True only when the Header document has “Show menu pages” turned on. */
+export async function isSiteMenuEnabled(): Promise<boolean> {
+  if (!client) {
+    return false;
+  }
+  const showMenu = await sanityFetch<boolean>(
+    `coalesce(*[_type == "siteHeader" && _id == $id][0].showMenu, false)`,
+    { id: SITE_HEADER_DOCUMENT_ID },
+    false
+  );
+  return showMenu === true;
+}
+
+const FOOTER_PAGE_HREFS: Record<string, string> = {
+  home: '/',
+  shop: '/shop',
+  workPage: '/work',
+  exhibitionsPage: '/exhibitions',
+  portfolioPage: '/portfolio',
+  podcastPage: '/podcasts',
+  about: '/about'
+};
+
+const FOOTER_PAGE_LABELS: Record<string, string> = {
+  home: 'Home',
+  shop: 'Shop',
+  workPage: 'Work',
+  exhibitionsPage: 'Exhibitions',
+  portfolioPage: 'Portfolio',
+  podcastPage: 'Podcasts',
+  about: 'About'
+};
+
+type FooterLinkPage = {
+  _type?: string;
+  title?: string;
+  slug?: string;
+  productTitle?: string;
+  handle?: string;
+};
+
+type FooterLinkRecord = {
+  linkType?: string;
+  label?: string;
+  url?: string;
+  page?: FooterLinkPage | null;
+};
+
+function footerPageHref(page: FooterLinkPage): string | null {
+  const type = page._type;
+  if (!type) return null;
+  if (type === 'product') {
+    return page.handle ? `/shop/${page.handle}` : null;
+  }
+  if (FOOTER_PAGE_HREFS[type]) return FOOTER_PAGE_HREFS[type];
+
+  const slug = page.slug?.trim();
+  if (!slug) return null;
+  if (type === 'legalPage') return `/legal/${slug}`;
+  if (type === 'exhibition') return `/exhibitions/${slug}`;
+  if (type === 'portfolioItem') return `/portfolio/${slug}`;
+  if (type === 'podcast') return `/podcasts/${slug}`;
+  return null;
+}
+
+function footerLinkLabel(link: FooterLinkRecord, page: FooterLinkPage | null): string | null {
+  const custom = link.label?.trim();
+  if (custom) return custom;
+  if (!page) return null;
+  if (page._type === 'product' && page.productTitle?.trim()) return page.productTitle.trim();
+  if (page.title?.trim()) return page.title.trim();
+  return page._type ? (FOOTER_PAGE_LABELS[page._type] ?? null) : null;
+}
+
+export async function getSiteFooterLinks(): Promise<SiteFooterLink[]> {
+  if (!client) return [];
+
+  const footer = await sanityFetch<{ links?: FooterLinkRecord[] | null } | null>(
+    `*[_type == "siteFooter" && _id == $id][0]{
+      links[]{
+        linkType,
+        label,
+        url,
+        page->{
+          _type,
+          title,
+          "slug": slug.current,
+          "productTitle": store.title,
+          "handle": store.slug.current
+        }
+      }
+    }`,
+    { id: SITE_FOOTER_DOCUMENT_ID },
+    null
+  );
+
+  const links = footer?.links ?? [];
+  const resolved: SiteFooterLink[] = [];
+
+  for (const link of links) {
+    if (link.linkType === 'external') {
+      const href = link.url?.trim();
+      const label = link.label?.trim();
+      if (!href || !label) continue;
+      resolved.push({ label, href, external: true });
+      continue;
+    }
+
+    const page = link.page;
+    if (!page) continue;
+    const href = footerPageHref(page);
+    const label = footerLinkLabel(link, page);
+    if (!href || !label) continue;
+    resolved.push({ label, href, external: false });
+  }
+
+  return resolved;
+}
+
+export async function getLegalPage(slug: string): Promise<LegalPageDocument | null> {
+  if (!client) return null;
+  const trimmed = slug.trim();
+  if (!trimmed) return null;
+
+  return sanityFetch<LegalPageDocument | null>(
+    `*[_type == "legalPage" && slug.current == $slug][0]{
+      title,
+      body
+    }`,
+    { slug: trimmed },
+    null
+  );
+}
+
 export async function getSiteHeader(): Promise<SiteHeaderDocument | null> {
   if (!client) {
     return null;
@@ -301,6 +453,7 @@ export async function getSiteHeader(): Promise<SiteHeaderDocument | null> {
   return sanityFetch<SiteHeaderDocument | null>(
     `*[_type == "siteHeader" && _id == $id][0]{
       logo ${siteHeaderImageProjection},
+      showMenu,
       menuLinks[]{
         label,
         href,
@@ -320,6 +473,7 @@ const workDocumentProjection = `{
   description,
   media[]{
     url,
+    youtubeUrl,
     footnote,
     poster { ..., alt, asset->{ url, mimeType } },
     image { ..., alt, asset->{ url, mimeType } }
@@ -327,8 +481,23 @@ const workDocumentProjection = `{
   sortOrder
 }`;
 
+async function withResolvedWorkVideo(entry: WorkMedia): Promise<WorkMedia> {
+  const youtubeId = youtubeVideoId(entry.youtubeUrl);
+  if (youtubeId) {
+    return { ...entry, youtubeId };
+  }
+
+  const url = entry.url?.trim();
+  if (!url) {
+    return entry;
+  }
+
+  const { resolveVimeoVideo } = await import('./vimeo');
+  const resolved = await resolveVimeoVideo(url).catch(() => undefined);
+  return resolved ? { ...entry, videoSrc: resolved.src, videoPoster: resolved.poster } : entry;
+}
+
 async function enrichWorks(works: WorkDocument[]): Promise<WorkDocument[]> {
-  const { resolveVimeoVideoSrc } = await import('./vimeo');
   const { normalizePlainText } = await import('./portableText');
 
   return Promise.all(
@@ -339,16 +508,7 @@ async function enrichWorks(works: WorkDocument[]): Promise<WorkDocument[]> {
         return { ...work, description };
       }
 
-      const media = await Promise.all(
-        work.media.map(async (entry) => {
-          const url = entry.url?.trim();
-          if (!url) {
-            return entry;
-          }
-          const videoSrc = await resolveVimeoVideoSrc(url).catch(() => undefined);
-          return videoSrc ? { ...entry, videoSrc } : entry;
-        })
-      );
+      const media = await Promise.all(work.media.map((entry) => withResolvedWorkVideo(entry)));
 
       return { ...work, description, media };
     })
@@ -397,6 +557,7 @@ export async function getWorkPage(): Promise<WorkPageDocument | null> {
 const exhibitionMediaProjection = `{
   kind,
   videoUrl,
+  youtubeUrl,
   image { ..., alt, asset->{ url, mimeType } }
 }`;
 
@@ -434,7 +595,16 @@ const exhibitionContentProjection = `content[]{
 }`;
 
 async function enrichExhibitionMedia(media: ExhibitionMedia | undefined): Promise<ExhibitionMedia | undefined> {
-  if (!media?.kind || media.kind !== 'video' || !media.videoUrl?.trim()) {
+  if (!media?.kind || media.kind !== 'video') {
+    return media;
+  }
+
+  const youtubeId = youtubeVideoId(media.youtubeUrl);
+  if (youtubeId) {
+    return { ...media, youtubeId };
+  }
+
+  if (!media.videoUrl?.trim()) {
     return media;
   }
 
@@ -600,6 +770,7 @@ const portfolioItemProjection = `{
   thumbnailImage { ..., alt, asset->{ url, mimeType } },
   media[]{
     url,
+    youtubeUrl,
     footnote,
     poster { ..., alt, asset->{ url, mimeType } },
     image { ..., alt, asset->{ url, mimeType } }
@@ -610,28 +781,13 @@ const portfolioItemProjection = `{
 async function enrichPortfolioItems(
   items: PortfolioItemDocument[]
 ): Promise<PortfolioItemDocument[]> {
-  const { resolveVimeoVideo } = await import('./vimeo');
-
   return Promise.all(
     items.map(async (item) => {
       if (!item.media?.length) {
         return item;
       }
 
-      const media = await Promise.all(
-        item.media.map(async (entry) => {
-          const url = entry.url?.trim();
-          if (!url) {
-            return entry;
-          }
-
-          const resolved = await resolveVimeoVideo(url).catch(() => undefined);
-          return resolved
-            ? { ...entry, videoSrc: resolved.src, videoPoster: resolved.poster }
-            : entry;
-        })
-      );
-
+      const media = await Promise.all(item.media.map((entry) => withResolvedWorkVideo(entry)));
       return { ...item, media };
     })
   );

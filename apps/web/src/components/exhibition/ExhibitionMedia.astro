@@ -1,5 +1,6 @@
 ---
 import type { ExhibitionMedia } from '../../lib/sanity';
+import AmbientYoutubePlayer from '../AmbientYoutubePlayer.astro';
 import HtmlVideo from '../HtmlVideo.astro';
 import SanityImage from '../SanityImage.astro';
 import VimeoEmbed from '../VimeoEmbed.astro';
@@ -12,14 +13,16 @@ interface Props {
 
 const { media, title, imageWidth = 1200 } = Astro.props;
 const showImage = media?.kind === 'image' && media.image;
-const showVideo = media?.kind === 'video' && media.videoUrl;
+const showVideo = media?.kind === 'video' && Boolean(media.youtubeId || media.videoUrl);
 ---
 
 {
   showImage ? (
     <SanityImage image={media?.image} altFallback={title} width={imageWidth} />
   ) : showVideo ? (
-    media?.videoSrc ? (
+    media?.youtubeId ? (
+      <AmbientYoutubePlayer youtubeId={media.youtubeId} title={title} fit="cover" />
+    ) : media?.videoSrc ? (
       <HtmlVideo src={media.videoSrc} title={title} />
     ) : (
       <VimeoEmbed url={media?.videoUrl} title={title} />

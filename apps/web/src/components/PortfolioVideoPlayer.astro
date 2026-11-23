@@ -1,15 +1,20 @@
 ---
+import YoutubePortfolioPlayer from './YoutubePortfolioPlayer.astro';
+
 interface Props {
   src?: string;
+  youtubeId?: string;
   poster?: string;
   title: string;
 }
 
-const { src, poster, title } = Astro.props;
+const { src, youtubeId, poster, title } = Astro.props;
 ---
 
 {
-  src ? (
+  youtubeId ? (
+    <YoutubePortfolioPlayer youtubeId={youtubeId} poster={poster} title={title} />
+  ) : src ? (
     <div class="page-portfolio-video" data-portfolio-video>
       <video
         class="page-portfolio-video-media"

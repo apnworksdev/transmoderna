@@ -58,7 +58,7 @@ export const portfolioItemType = defineType({
       title: 'Media',
       type: 'array',
       of: [{ type: 'workMedia' }],
-      description: 'Images or Vimeo videos shown on the portfolio single page, in order.',
+      description: 'Images, Vimeo, or YouTube videos shown on the portfolio single page, in order.',
       validation: (Rule) => Rule.required().min(1)
     }),
     defineField({

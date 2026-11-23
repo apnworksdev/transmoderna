@@ -5,6 +5,7 @@ import { brandType } from './documents/brand';
 import { exhibitionType } from './documents/exhibition';
 import { exhibitionsPageType } from './documents/exhibitionsPage';
 import { homeType } from './documents/home';
+import { legalPageType } from './documents/legalPage';
 import { podcastType } from './documents/podcast';
 import { podcastPageType } from './documents/podcastPage';
 import { portfolioItemType } from './documents/portfolioItem';
@@ -12,10 +13,12 @@ import { portfolioPageType } from './documents/portfolioPage';
 import { productType } from './documents/product';
 import { productVariantType } from './documents/productVariant';
 import { shopType } from './documents/shop';
+import { siteFooterType } from './documents/siteFooter';
+import { siteHeaderType } from './documents/siteHeader';
 import { tagType } from './documents/tag';
 import { workType } from './documents/work';
 import { workPageType } from './documents/workPage';
-import { siteHeaderType } from './documents/siteHeader';
+import { footerLinkType } from './objects/footerLink';
 import { siteMenuLinkType } from './objects/siteMenuLink';
 import { clientType } from './objects/client';
 import { connectLinkType } from './objects/connectLink';
@@ -44,6 +47,7 @@ export const schemaTypes: SchemaTypeDefinition[] = [
   exhibitionFullImageBlockType,
   exhibitionTwoColumnBlockType,
   workMediaType,
+  footerLinkType,
   siteMenuLinkType,
   teamMemberType,
   contactSectionType,
@@ -52,6 +56,8 @@ export const schemaTypes: SchemaTypeDefinition[] = [
   connectSectionType,
   homeType,
   siteHeaderType,
+  siteFooterType,
+  legalPageType,
   aboutType,
   shopType,
   workType,

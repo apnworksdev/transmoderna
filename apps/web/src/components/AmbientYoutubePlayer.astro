@@ -1,0 +1,33 @@
+---
+import 'plyr/dist/plyr.css';
+import '../styles/components/youtube-player.css';
+
+interface Props {
+  youtubeId: string;
+  title: string;
+  fit?: 'cover' | 'intrinsic';
+}
+
+const { youtubeId, title, fit = 'intrinsic' } = Astro.props;
+---
+
+<div
+  class:list={[
+    'html-video-wrap',
+    'html-video-wrap--youtube',
+    fit === 'cover' && 'youtube-cover'
+  ]}
+  data-ambient-youtube
+  data-video-title={title}
+>
+  <button
+    type="button"
+    class="html-video-mute-toggle"
+    data-youtube-mute-toggle
+    aria-label="Unmute video"
+    aria-pressed="false"
+  >
+    Unmute
+  </button>
+  <div data-plyr-provider="youtube" data-plyr-embed-id={youtubeId} title={title}></div>
+</div>

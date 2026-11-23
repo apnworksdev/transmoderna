@@ -1,0 +1,45 @@
+---
+import 'plyr/dist/plyr.css';
+import '../styles/components/youtube-player.css';
+
+interface Props {
+  youtubeId: string;
+  poster?: string;
+  title: string;
+}
+
+const { youtubeId, poster, title } = Astro.props;
+---
+
+<div
+  class="page-portfolio-video page-portfolio-video--youtube youtube-cover"
+  data-portfolio-video
+  data-youtube-id={youtubeId}
+  data-video-title={title}
+>
+  <div
+    class="page-portfolio-video-embed"
+    data-plyr-provider="youtube"
+    data-plyr-embed-id={youtubeId}
+    data-poster={poster}
+    title={title}
+  >
+  </div>
+
+  <button type="button" class="page-portfolio-video-hit" data-portfolio-youtube-hit aria-label={`Play ${title}`}>
+  </button>
+
+  <button
+    type="button"
+    class="page-portfolio-video-progress"
+    data-portfolio-video-progress
+    aria-label="Video progress"
+    aria-valuemin={0}
+    aria-valuemax={100}
+    aria-valuenow={0}
+  >
+    <span class="page-portfolio-video-progress-track">
+      <span class="page-portfolio-video-progress-fill" data-portfolio-video-progress-fill></span>
+    </span>
+  </button>
+</div>

@@ -14,11 +14,18 @@ export const exhibitionFullImageBlockType = defineType({
     })
   ],
   preview: {
-    select: { kind: 'media.kind', videoUrl: 'media.videoUrl', media: 'media.image' },
-    prepare({ kind, videoUrl, media }) {
+    select: {
+      kind: 'media.kind',
+      videoUrl: 'media.videoUrl',
+      youtubeUrl: 'media.youtubeUrl',
+      media: 'media.image'
+    },
+    prepare({ kind, videoUrl, youtubeUrl, media }) {
+      const vimeo = typeof videoUrl === 'string' ? videoUrl.trim() : '';
+      const youtube = typeof youtubeUrl === 'string' ? youtubeUrl.trim() : '';
       return {
         title: kind === 'video' ? 'Full video' : 'Full image',
-        subtitle: kind === 'video' && typeof videoUrl === 'string' ? videoUrl : undefined,
+        subtitle: kind === 'video' ? youtube || vimeo || undefined : undefined,
         media
       };
     }

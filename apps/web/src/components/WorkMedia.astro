@@ -1,5 +1,6 @@
 ---
 import type { WorkMedia } from '../lib/sanity';
+import AmbientYoutubePlayer from './AmbientYoutubePlayer.astro';
 import HtmlVideo from './HtmlVideo.astro';
 import SanityImage from './SanityImage.astro';
 
@@ -10,10 +11,11 @@ interface Props {
 }
 
 const { media, title, index } = Astro.props;
+const youtubeId = media?.youtubeId;
 const vimeoUrl = media?.url?.trim();
 const videoSrc = media?.videoSrc;
-const showVideo = Boolean(vimeoUrl && videoSrc);
-const showImage = Boolean(media?.image && (!vimeoUrl || !videoSrc));
+const showVideo = Boolean(youtubeId || (vimeoUrl && videoSrc));
+const showImage = Boolean(media?.image && !showVideo);
 const hasMedia = showVideo || showImage;
 const hasFootnote = Boolean(media?.footnote?.trim());
 ---
@@ -22,7 +24,11 @@ const hasFootnote = Boolean(media?.footnote?.trim());
   hasMedia ? (
     <>
       {showVideo ? (
-        <HtmlVideo src={videoSrc} title={title} />
+        youtubeId ? (
+          <AmbientYoutubePlayer youtubeId={youtubeId} title={title} />
+        ) : (
+          <HtmlVideo src={videoSrc} title={title} />
+        )
       ) : (
         <SanityImage image={media?.image} altFallback={title} />
       )}
